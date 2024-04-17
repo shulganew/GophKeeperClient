@@ -10,8 +10,8 @@ func InitLog() zap.SugaredLogger {
 	cfg := zap.Config{
 		Encoding:         "console",
 		Level:            zap.NewAtomicLevelAt(zapcore.DebugLevel),
-		OutputPaths:      []string{"stdout", "/tmp/gkc2.log"},
-		ErrorOutputPaths: []string{"stdout", "/tmp/gkc2.log"},
+		OutputPaths:      []string{"/tmp/gkc2.log"},
+		ErrorOutputPaths: []string{"/tmp/gkc2.log"},
 		EncoderConfig: zapcore.EncoderConfig{
 			MessageKey: "message",
 
