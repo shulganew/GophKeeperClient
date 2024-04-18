@@ -17,7 +17,7 @@ func GetDefaulInit() tea.Cmd {
 }
 
 // DefaulUpdate has work with main keys across all app.
-func GetDefaulUpdate(m tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func GetDefaulUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Make sure these keys always quit
 	if msg, ok := msg.(tea.KeyMsg); ok {
 		k := msg.String()
@@ -33,7 +33,7 @@ func GetHeaderView() string {
 	return styles.GopherHeader.Render(fmt.Sprintf("GopherKeeper client, build version: 1.0.0, pid %d \n\n", os.Getpid()))
 
 }
-func GetHelpView(string) string {
+func GetHelpView() string {
 	s := strings.Builder{}
 	s.WriteString("\n\n")
 	s.WriteString(styles.SubtleStyle.Render("up/down: select"))

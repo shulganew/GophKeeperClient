@@ -14,34 +14,47 @@ type Result struct {
 	Coosen int
 }
 
-const NotLoginSt = 0
+// Menu for not login User with Log in and Sign up choices
+const NotLoginState = 0
+
+// Users login form.
+const LoginForm = 1
+
+// User registration form.
+const SignUpForm = 2
 
 // Interface for all states selection.
 type State interface {
 	GetInit() tea.Cmd
-	GetUpdate(Model, tea.Msg) (tea.Model, tea.Cmd)
-	GetView(Model) string
+	GetUpdate(*Model, tea.Msg) (tea.Model, tea.Cmd)
+	GetView(*Model) string
 }
 
 type Model struct {
-	Quitting     bool
-	CurrentState int
-	States       []State
+	Quitting      bool
+	CurrentState  int
+	PreviousState int
+	States        []State
 }
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
 func (m Model) Init() tea.Cmd {
-	return m.States[0].GetInit()
+	return m.States[m.CurrentState].GetInit()
 }
 
 // Main update function.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return m.States[0].GetUpdate(m, msg)
+	return m.States[m.CurrentState].GetUpdate(&m, msg)
 
 }
 
 // The main view, which just calls the appropriate sub-view
 func (m Model) View() string {
-	return m.States[0].GetView(m)
+	return m.States[m.CurrentState].GetView(&m)
+}
+
+func (m *Model) ChanegeState(current, next int) {
+	m.CurrentState = next
+	m.PreviousState = current
 }

@@ -7,10 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/styles"
-	"go.uber.org/zap"
 )
-
-const Question = "You are not authorized, Log In or Sign Up:"
 
 // Implemet State.
 var _ tui.State = (*NotLogin)(nil)
@@ -18,40 +15,41 @@ var _ tui.State = (*NotLogin)(nil)
 type NotLogin struct {
 	Choices []string
 	Choice  int
-	Chosen  bool
 }
 
+// Init is the first function that will be called. It returns an optional
+// initial command. To not perform an initial command return nil.
 func (nl *NotLogin) GetInit() tea.Cmd {
 	return nil
 }
 
-func (nl *NotLogin) GetUpdate(m tui.Model, msg tea.Msg) (tm tea.Model, tcmd tea.Cmd) {
+// Main update function.
+func (nl *NotLogin) GetUpdate(m *tui.Model, msg tea.Msg) (tm tea.Model, tcmd tea.Cmd) {
 	// Add header.
 
-	nl.updateChoices(msg)
+	nl.updateChoices(m, msg)
 	tm, tcmd = GetDefaulUpdate(m, msg)
 	return tm, tcmd
 }
 
-func (nl *NotLogin) GetView(m tui.Model) string {
-	zap.S().Infoln("Current choice", nl.Choice)
-
-	s := GetHeaderView()
+// The main view, which just calls the appropriate sub-view
+func (nl *NotLogin) GetView(m *tui.Model) string {
+	s := strings.Builder{}
+	s.WriteString(GetHeaderView())
 	if m.Quitting {
-		return s + "\n  See you later!\n\n"
-	}
-	if !nl.Chosen {
-		return s + nl.choicesRegister()
-	} else {
-		// Chosen!
-		return s + "\n  Chosen!Chosen!!\n\n"
+		s.WriteString("\n  See you later!\n\n")
 	}
 
+	s.WriteString(nl.choicesRegister())
+
+	s.WriteString(GetHelpView())
+	return s.String()
 }
 
+// Method for working with views.
+//
 // Update loop for the first view where you're choosing a task.
-func (nl *NotLogin) updateChoices(msg tea.Msg) {
-
+func (nl *NotLogin) updateChoices(m *tui.Model, msg tea.Msg) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -62,12 +60,18 @@ func (nl *NotLogin) updateChoices(msg tea.Msg) {
 			}
 		case "up":
 			nl.Choice--
-
 			if nl.Choice < 0 {
 				nl.Choice = len(nl.Choices) - 1
 			}
 		case "enter":
-			nl.Chosen = true
+			switch nl.Choice {
+			// Log in
+			case 0:
+				m.ChanegeState(tui.NotLoginState, tui.LoginForm)
+				// Sign up
+			case 1:
+				m.ChanegeState(tui.NotLoginState, tui.SignUpForm)
+			}
 
 		}
 	}
@@ -76,10 +80,9 @@ func (nl *NotLogin) updateChoices(msg tea.Msg) {
 
 // Choosing menu.
 func (nl *NotLogin) choicesRegister() string {
-	zap.S().Infoln("Update choice", nl.Choice, " ", len(nl.Choices))
 	s := strings.Builder{}
 	s.WriteString("\n")
-	s.WriteString(styles.GopherQuestion.Render(Question))
+	s.WriteString(styles.GopherQuestion.Render("You are not authorized, Log In or Sign Up:"))
 	s.WriteString("\n\n")
 	for i := 0; i < len(nl.Choices); i++ {
 		s.WriteString(checkbox(nl.Choices[i], nl.Choice == i))
