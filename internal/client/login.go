@@ -1,35 +1,26 @@
 package client
 
-import (
-	"bytes"
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"io"
-	"math/rand"
-	"net/http"
-	"strconv"
+/*
 
-	"github.com/shulganew/GophKeeperClient/internal/entities"
-	"go.uber.org/zap"
-)
+func UserLogin(login, pw string) {
 
-func UserReg() {
-	i := strconv.Itoa(rand.Intn(1000))
-	user := entities.User{Login: "Igor" + i, Password: "MySecret"}
+	var user model.User
 
 	reqBodyDel := bytes.NewBuffer([]byte{})
 
-	err := json.NewEncoder(reqBodyDel).Encode(&user)
+	err = json.NewEncoder(reqBodyDel).Encode(&users[nUser])
 	if err != nil {
 		panic(err)
 	}
 
 	client := &http.Client{}
-	request, err := http.NewRequest(http.MethodPost, "http://localhost:8088/api/user/register", reqBodyDel)
+	request, err := http.NewRequest(http.MethodPost, "http://localhost:8088/api/user/login", reqBodyDel)
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	// add jwt
+	request.Header.Add("Authorization", users[nUser].JWT.String)
 
 	//reqest
 	request.Header.Add("Content-Type", "application/json")
@@ -53,8 +44,13 @@ func UserReg() {
 	fmt.Println("Body: ", string(body))
 	fmt.Printf("Status Code: %d\r\n", res.StatusCode)
 
-	jwt := res.Header.Get("Authorization")[len("Bearer "):]
-	user.JWT = sql.NullString{String: jwt, Valid: true}
-	
-	zap.S().Infoln(user.JWT, user.Login, user.Password)
+	//jwt := res.Header.Get("Authorization")[len("Bearer "):]
+	jwt := res.Header.Get("Authorization")
+
+	_, err = conn.Exec(ctx, "UPDATE users SET jwt = $1", jwt)
+	if err != nil {
+		panic(err)
+	}
+
 }
+*/

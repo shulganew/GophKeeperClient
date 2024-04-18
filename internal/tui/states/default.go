@@ -36,10 +36,10 @@ func GetHeaderView() string {
 func GetHelpView() string {
 	s := strings.Builder{}
 	s.WriteString("\n\n")
-	s.WriteString(styles.SubtleStyle.Render("up/down: select"))
+	s.WriteString(styles.SubtleStyle.Render("<Up>/<Down> arrow : select"))
 	s.WriteString(styles.DotStyle)
-	s.WriteString(styles.SubtleStyle.Render("enter: choose"))
+	s.WriteString(styles.SubtleStyle.Render("<Enter>: choose"))
 	s.WriteString(styles.DotStyle)
-	s.WriteString(styles.SubtleStyle.Render("esc: quit"))
+	s.WriteString(styles.SubtleStyle.Render("<Esc>: quit"))
 	return s.String()
 }

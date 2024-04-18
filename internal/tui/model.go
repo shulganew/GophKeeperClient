@@ -8,6 +8,8 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/shulganew/GophKeeperClient/internal/app/config"
+	"github.com/shulganew/GophKeeperClient/internal/entities"
 )
 
 type Result struct {
@@ -31,6 +33,9 @@ type State interface {
 }
 
 type Model struct {
+	Conf          config.Config
+	User          entities.User // Store user after login or register.
+	IsUserSet     bool          // Quick check users registration.
 	Quitting      bool
 	CurrentState  int
 	PreviousState int

@@ -2,11 +2,13 @@ package states
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/shulganew/GophKeeperClient/internal/client"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/styles"
 	"go.uber.org/zap"
@@ -18,14 +20,18 @@ var _ tui.State = (*RegisterForm)(nil)
 // RegisterForm, state 2
 // Inputs: login, email, pw, pw (check corret input)
 type RegisterForm struct {
-	focusIndex int
-	Inputs     []textinput.Model
-	cursorMode cursor.Mode
+	focusIndex  int
+	Inputs      []textinput.Model
+	cursorMode  cursor.Mode
+	ansver      bool  // Add info message if servier send answer.
+	IsRegOk     bool  // Successful registration.
+	ansverCode  int   // Servier answer code.
+	ansverError error // Servier answer error.
 }
 
 func NewRegisterForm() RegisterForm {
 	rf := RegisterForm{
-		Inputs: make([]textinput.Model, 4),
+		Inputs: make([]textinput.Model, 3),
 	}
 
 	var t textinput.Model
@@ -40,18 +46,17 @@ func NewRegisterForm() RegisterForm {
 			t.Focus()
 			t.PromptStyle = styles.FocusedStyle
 			t.TextStyle = styles.FocusedStyle
+			t.SetValue("igor")
 		case 1:
 			t.Placeholder = "e-mail"
 			t.PromptStyle = styles.NoStyle
 			t.TextStyle = styles.NoStyle
+			t.SetValue("scaevol@yandex.ru")
 		case 2:
 			t.Placeholder = "Password"
 			t.EchoMode = textinput.EchoPassword
 			t.EchoCharacter = '•'
-		case 3:
-			t.Placeholder = "Password"
-			t.EchoMode = textinput.EchoPassword
-			t.EchoCharacter = '•'
+			t.SetValue("123")
 		}
 
 		rf.Inputs[i] = t
@@ -89,10 +94,23 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 		// Set focus to next input
 		case "tab", "shift+tab", "enter", "up", "down":
 			s := msg.String()
-
-			// Submit button pressed.
+			// Submit button pressed!
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
-				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value())
+				// If user registration done, enter for continue...
+				if rf.IsRegOk {
+					m.ChanegeState(tui.SignUpForm, tui.NotLoginState)
+				}
+				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
+				user, status, err := client.UserReg(m.Conf, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
+				rf.ansver = true
+				rf.ansverCode = status
+				rf.ansverError = err
+				if status == http.StatusOK {
+					rf.IsRegOk = true
+					m.User = *user
+
+				}
+				zap.S().Infof("Text inputs %d | %w", status, err)
 
 				return m, nil
 			}
@@ -153,10 +171,26 @@ func (rf *RegisterForm) GetView(m *tui.Model) string {
 		button = &styles.FocusedButton
 	}
 	fmt.Fprintf(&b, "\n\n%s\n\n", *button)
+	if rf.ansver {
+		if rf.ansverCode == http.StatusOK {
+			b.WriteString(styles.GopherQuestion.Render("User registerd successful: ", m.User.Login))
+			b.WriteString("\n\n")
+			b.WriteString(styles.GopherQuestion.Render("Press <Enter> to continue... "))
+			b.WriteString("\n\n")
+		} else {
+			b.WriteString(styles.GopherQuestion.Render("Server ansver with code: ", fmt.Sprint(rf.ansverCode)))
+			b.WriteString("\n\n")
+		}
 
+	}
+	if rf.ansverError != nil {
+		b.WriteString(styles.GopherQuestion.Render(fmt.Sprintf("Error: %s", rf.ansverError.Error())))
+		b.WriteString("\n")
+	}
+	b.WriteString("\n\n")
 	b.WriteString(styles.HelpStyle.Render("cursor mode is "))
 	b.WriteString(styles.CursorModeHelpStyle.Render(rf.cursorMode.String()))
-	b.WriteString(styles.HelpStyle.Render(" (ctrl+r to change style), esc - back to menu."))
+	b.WriteString(styles.HelpStyle.Render(" (<ctrl+r> to change style), <Esc> - back to menu."))
 
 	return b.String()
 }
