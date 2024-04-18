@@ -13,22 +13,23 @@ import (
 )
 
 // Implemet State.
-var _ tui.State = (*LoginForm)(nil)
+var _ tui.State = (*RegisterForm)(nil)
 
-// LoginForm, state 1
-type LoginForm struct {
+// RegisterForm, state 2
+// Inputs: login, email, pw, pw (check corret input)
+type RegisterForm struct {
 	focusIndex int
 	Inputs     []textinput.Model
 	cursorMode cursor.Mode
 }
 
-func NewLoginForm() LoginForm {
-	lf := LoginForm{
-		Inputs: make([]textinput.Model, 2),
+func NewRegisterForm() RegisterForm {
+	rf := RegisterForm{
+		Inputs: make([]textinput.Model, 4),
 	}
 
 	var t textinput.Model
-	for i := range lf.Inputs {
+	for i := range rf.Inputs {
 		t = textinput.New()
 		t.Cursor.Style = styles.CursorStyle
 		t.CharLimit = 32
@@ -40,24 +41,32 @@ func NewLoginForm() LoginForm {
 			t.PromptStyle = styles.FocusedStyle
 			t.TextStyle = styles.FocusedStyle
 		case 1:
+			t.Placeholder = "e-mail"
+			t.PromptStyle = styles.NoStyle
+			t.TextStyle = styles.NoStyle
+		case 2:
+			t.Placeholder = "Password"
+			t.EchoMode = textinput.EchoPassword
+			t.EchoCharacter = '•'
+		case 3:
 			t.Placeholder = "Password"
 			t.EchoMode = textinput.EchoPassword
 			t.EchoCharacter = '•'
 		}
 
-		lf.Inputs[i] = t
+		rf.Inputs[i] = t
 	}
 
-	return lf
+	return rf
 }
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (lf *LoginForm) GetInit() tea.Cmd {
+func (rf *RegisterForm) GetInit() tea.Cmd {
 	return textinput.Blink
 }
 
-func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -67,13 +76,13 @@ func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Change cursor mode
 		case "ctrl+r":
-			lf.cursorMode++
-			if lf.cursorMode > cursor.CursorHide {
-				lf.cursorMode = cursor.CursorBlink
+			rf.cursorMode++
+			if rf.cursorMode > cursor.CursorHide {
+				rf.cursorMode = cursor.CursorBlink
 			}
-			cmds := make([]tea.Cmd, len(lf.Inputs))
-			for i := range lf.Inputs {
-				cmds[i] = lf.Inputs[i].Cursor.SetMode(lf.cursorMode)
+			cmds := make([]tea.Cmd, len(rf.Inputs))
+			for i := range rf.Inputs {
+				cmds[i] = rf.Inputs[i].Cursor.SetMode(rf.cursorMode)
 			}
 			return m, tea.Batch(cmds...)
 
@@ -82,38 +91,38 @@ func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			s := msg.String()
 
 			// Submit button pressed.
-			if s == "enter" && lf.focusIndex == len(lf.Inputs) {
-				zap.S().Infof("Text inputs %s  %s", lf.Inputs[0].Value(), lf.Inputs[1].Value())
+			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
+				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value())
 
 				return m, nil
 			}
 
 			// Cycle indexes
 			if s == "up" || s == "shift+tab" {
-				lf.focusIndex--
+				rf.focusIndex--
 			} else {
-				lf.focusIndex++
+				rf.focusIndex++
 			}
 
-			if lf.focusIndex > len(lf.Inputs) {
-				lf.focusIndex = 0
-			} else if lf.focusIndex < 0 {
-				lf.focusIndex = len(lf.Inputs)
+			if rf.focusIndex > len(rf.Inputs) {
+				rf.focusIndex = 0
+			} else if rf.focusIndex < 0 {
+				rf.focusIndex = len(rf.Inputs)
 			}
 
-			cmds := make([]tea.Cmd, len(lf.Inputs))
-			for i := 0; i <= len(lf.Inputs)-1; i++ {
-				if i == lf.focusIndex {
+			cmds := make([]tea.Cmd, len(rf.Inputs))
+			for i := 0; i <= len(rf.Inputs)-1; i++ {
+				if i == rf.focusIndex {
 					// Set focused state
-					cmds[i] = lf.Inputs[i].Focus()
-					lf.Inputs[i].PromptStyle = styles.FocusedStyle
-					lf.Inputs[i].TextStyle = styles.FocusedStyle
+					cmds[i] = rf.Inputs[i].Focus()
+					rf.Inputs[i].PromptStyle = styles.FocusedStyle
+					rf.Inputs[i].TextStyle = styles.FocusedStyle
 					continue
 				}
 				// Remove focused state
-				lf.Inputs[i].Blur()
-				lf.Inputs[i].PromptStyle = styles.NoStyle
-				lf.Inputs[i].TextStyle = styles.NoStyle
+				rf.Inputs[i].Blur()
+				rf.Inputs[i].PromptStyle = styles.NoStyle
+				rf.Inputs[i].TextStyle = styles.NoStyle
 			}
 
 			return m, tea.Batch(cmds...)
@@ -121,45 +130,45 @@ func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	// Handle character input and blinking
-	cmd := lf.updateInputs(msg)
+	cmd := rf.updateInputs(msg)
 
 	return m, cmd
 }
 
 // The main view, which just calls the appropriate sub-view
-func (lf *LoginForm) GetView(m *tui.Model) string {
+func (rf *RegisterForm) GetView(m *tui.Model) string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(styles.GopherQuestion.Render("Log in form:\n"))
+	b.WriteString(styles.GopherQuestion.Render("Registration form:\n"))
 	b.WriteString("\n")
-	for i := range lf.Inputs {
-		b.WriteString(lf.Inputs[i].View())
-		if i < len(lf.Inputs)-1 {
+	for i := range rf.Inputs {
+		b.WriteString(rf.Inputs[i].View())
+		if i < len(rf.Inputs)-1 {
 			b.WriteRune('\n')
 		}
 	}
 
 	button := &styles.BlurredButton
-	if lf.focusIndex == len(lf.Inputs) {
+	if rf.focusIndex == len(rf.Inputs) {
 		button = &styles.FocusedButton
 	}
 	fmt.Fprintf(&b, "\n\n%s\n\n", *button)
 
 	b.WriteString(styles.HelpStyle.Render("cursor mode is "))
-	b.WriteString(styles.CursorModeHelpStyle.Render(lf.cursorMode.String()))
+	b.WriteString(styles.CursorModeHelpStyle.Render(rf.cursorMode.String()))
 	b.WriteString(styles.HelpStyle.Render(" (ctrl+r to change style), esc - back to menu."))
 
 	return b.String()
 }
 
 // Help functions
-func (lf *LoginForm) updateInputs(msg tea.Msg) tea.Cmd {
-	cmds := make([]tea.Cmd, len(lf.Inputs))
+func (rf *RegisterForm) updateInputs(msg tea.Msg) tea.Cmd {
+	cmds := make([]tea.Cmd, len(rf.Inputs))
 
 	// Only text inputs with Focus() set will respond, so it's safe to simply
 	// update all of them here without any further logic.
-	for i := range lf.Inputs {
-		lf.Inputs[i], cmds[i] = lf.Inputs[i].Update(msg)
+	for i := range rf.Inputs {
+		rf.Inputs[i], cmds[i] = rf.Inputs[i].Update(msg)
 	}
 
 	return tea.Batch(cmds...)

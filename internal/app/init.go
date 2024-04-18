@@ -45,12 +45,11 @@ func InitLog() zap.SugaredLogger {
 }
 
 func InitModel() tea.Model {
-
 	// Init Not Login, state 0.
 	nl := states.NotLogin{Choices: []string{"Log In", "Sign Up"}}
-	// Init Not Login, state 1.
-
+	// Login form, state 1.
 	lf := states.NewLoginForm()
-
-	return tui.Model{CurrentState: 0, States: []tui.State{&nl, &lf}}
+	// Register form - state 2.
+	rf := states.NewRegisterForm()
+	return tui.Model{CurrentState: 0, States: []tui.State{&nl, &lf, &rf}}
 }
