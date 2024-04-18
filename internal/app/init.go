@@ -1,6 +1,9 @@
 package app
 
 import (
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/shulganew/GophKeeperClient/internal/tui"
+	"github.com/shulganew/GophKeeperClient/internal/tui/states"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -39,4 +42,11 @@ func InitLog() zap.SugaredLogger {
 		_ = sugar.Sync()
 	}()
 	return sugar
+}
+
+func InitModel() tea.Model {
+
+	// Init Not Login.
+	nl := states.NotLogin{Choices: []string{"Log In", "Sign Up", "Get out"}}
+	return tui.Model{CurrentState: 0, States: []tui.State{&nl}}
 }
