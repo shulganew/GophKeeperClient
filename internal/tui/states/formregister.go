@@ -179,12 +179,12 @@ func (rf *RegisterForm) GetView(m *tui.Model) string {
 			b.WriteString(styles.ErrorStyle.Render("Server ansver with code: ", fmt.Sprint(rf.ansverCode)))
 			b.WriteString("\n\n")
 		}
+		if rf.ansverError != nil {
+			b.WriteString(styles.ErrorStyle.Render(fmt.Sprintf("Error: %s", rf.ansverError.Error())))
+			b.WriteString("\n")
+		}
+	}
 
-	}
-	if rf.ansverError != nil {
-		b.WriteString(styles.ErrorStyle.Render(fmt.Sprintf("Error: %s", rf.ansverError.Error())))
-		b.WriteString("\n")
-	}
 	b.WriteString("\n\n")
 	b.WriteString(styles.HelpStyle.Render("<Esc> - back to menu."))
 

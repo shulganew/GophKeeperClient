@@ -168,12 +168,12 @@ func (lf *LoginForm) GetView(m *tui.Model) string {
 			b.WriteString(styles.ErrorStyle.Render("Server ansver with code: ", fmt.Sprint(lf.ansverCode)))
 			b.WriteString("\n\n")
 		}
+		if lf.ansverError != nil {
+			b.WriteString(styles.ErrorStyle.Render(fmt.Sprintf("Error: %s", lf.ansverError.Error())))
+			b.WriteString("\n")
+		}
+	}
 
-	}
-	if lf.ansverError != nil {
-		b.WriteString(styles.ErrorStyle.Render(fmt.Sprintf("Error: %s", lf.ansverError.Error())))
-		b.WriteString("\n")
-	}
 	b.WriteString("\n\n")
 	b.WriteString(styles.HelpStyle.Render("<Esc> - back to menu."))
 
