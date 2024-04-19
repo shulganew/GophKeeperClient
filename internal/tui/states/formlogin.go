@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/shulganew/GophKeeperClient/internal/app/backup"
 	"github.com/shulganew/GophKeeperClient/internal/client"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/styles"
@@ -73,7 +74,7 @@ func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.ChangeState(tui.LoginForm, tui.MainMenu)
 				return m, nil
 			}
-			m.ChangeState(tui.LoginForm, tui.NotLoginState)
+			m.ChangeState(tui.LoginForm, tui.NotLoginMenu)
 			return m, nil
 
 		// Set focus to next input
@@ -96,7 +97,12 @@ func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				lf.ansverError = err
 				if status == http.StatusOK {
 					lf.IsLogInOk = true
-					m.User = *user
+					m.User = user
+					// Backup curent user.
+					err = backup.SaveUser(*user)
+					if err != nil {
+						zap.S().Errorln("Can't save user: ", err)
+					}
 					return m, nil
 
 				}

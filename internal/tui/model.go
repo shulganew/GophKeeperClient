@@ -17,7 +17,7 @@ type Result struct {
 }
 
 // Menu for not login User with Log in and Sign up choices
-const NotLoginState = 0
+const NotLoginMenu = 0
 
 // Users login form.
 const LoginForm = 1
@@ -28,6 +28,15 @@ const SignUpForm = 2
 // Mani menu for loged in users.
 const MainMenu = 3
 
+// Menu for site's logins and passwords.
+const LoginMenu = 4
+
+// List site's logins and passwords.
+const ListLogin = 5
+
+// Add site's logins and passwords.
+const AddLogin = 6
+
 // Interface for all states selection.
 type State interface {
 	GetInit() tea.Cmd
@@ -37,7 +46,7 @@ type State interface {
 
 type Model struct {
 	Conf          config.Config
-	User          entities.User // Store user after login or register.
+	User          *entities.User // Store user after login or register.
 	IsUserLogedIn bool          // Quick check users registration.
 	Quitting      bool
 	CurrentState  int

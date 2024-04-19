@@ -2,9 +2,11 @@ package app
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/shulganew/GophKeeperClient/internal/app/backup"
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states"
+	"github.com/shulganew/GophKeeperClient/internal/tui/states/loginpw"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -46,14 +48,34 @@ func InitLog() zap.SugaredLogger {
 }
 
 func InitModel(conf config.Config) tea.Model {
-	// Init Not Login, state 0.
+	// Load User from backup
+	cSate := tui.MainMenu
+	user, err := backup.LoadUser()
+	if err != nil {
+		zap.S().Infoln("Saved user not found.")
+		cSate = tui.NotLoginMenu
+	}
+	zap.S().Infoln("Start menu: ", cSate)
+	//
+	// Menu: Init Not Login, state 0.
+	//
 	nl := states.NewNotLogin()
 	// Login form, state 1.
 	lf := states.NewLoginForm()
 	// Register form - state 2.
 	rf := states.NewRegisterForm()
-	// Main menu for loged in users. State 3.
+	//
+	// Menu: Main menu for loged in users. State 3.
+	//
 	mm := states.NewMainMenu()
+	//
+	// Menu: Save site's login and passwords. 4
+	//
+	lm := loginpw.NewLoginMenu()
+	// List site's login and passwords 5
+	ll := loginpw.NewListLogin()
+	// Add site's login and passwords 6
+	al := loginpw.NewAddLogin()
 
-	return tui.Model{Conf: conf, CurrentState: 0, States: []tui.State{&nl, &lf, &rf, &mm}}
+	return tui.Model{Conf: conf, CurrentState: cSate, States: []tui.State{&nl, &lf, &rf, &mm, &lm, &ll, &al}, User: user}
 }

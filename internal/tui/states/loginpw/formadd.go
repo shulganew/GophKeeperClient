@@ -1,4 +1,4 @@
-package states
+package loginpw
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/shulganew/GophKeeperClient/internal/app/backup"
 	"github.com/shulganew/GophKeeperClient/internal/client"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/styles"
@@ -15,13 +14,13 @@ import (
 )
 
 // Implemet State.
-var _ tui.State = (*RegisterForm)(nil)
+var _ tui.State = (*AddLogin)(nil)
 
-const InputsRegister = 3
+const InputsSitesLogin = 3
 
-// RegisterForm, state 2
+// AddLogin, state 2
 // Inputs: login, email, pw, pw (check corret input)
-type RegisterForm struct {
+type AddLogin struct {
 	focusIndex  int
 	Inputs      []textinput.Model
 	ansver      bool  // Add info message if servier send answer.
@@ -30,9 +29,9 @@ type RegisterForm struct {
 	ansverError error // Servier answer error.
 }
 
-func NewRegisterForm() RegisterForm {
-	rf := RegisterForm{
-		Inputs: make([]textinput.Model, InputsRegister),
+func NewAddLogin() AddLogin {
+	rf := AddLogin{
+		Inputs: make([]textinput.Model, InputsSitesLogin),
 	}
 
 	var t textinput.Model
@@ -43,13 +42,13 @@ func NewRegisterForm() RegisterForm {
 
 		switch i {
 		case 0:
-			t.Placeholder = "Login"
+			t.Placeholder = "https://mysite.ru"
 			t.Focus()
 			t.PromptStyle = styles.FocusedStyle
 			t.TextStyle = styles.FocusedStyle
-			t.SetValue("igor")
+			t.SetValue("https://mysite.ru")
 		case 1:
-			t.Placeholder = "e-mail"
+			t.Placeholder = "login"
 			t.PromptStyle = styles.NoStyle
 			t.TextStyle = styles.NoStyle
 			t.SetValue("scaevol@yandex.ru")
@@ -59,30 +58,28 @@ func NewRegisterForm() RegisterForm {
 			t.EchoCharacter = '•'
 			t.SetValue("123")
 		}
-
 		rf.Inputs[i] = t
 	}
-
 	return rf
 }
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (rf *RegisterForm) GetInit() tea.Cmd {
+func (rf *AddLogin) GetInit() tea.Cmd {
 	return textinput.Blink
 }
 
-func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func (rf *AddLogin) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
 			rf.cleanform()
 			if m.IsUserLogedIn {
-				m.ChangeState(tui.SignUpForm, tui.MainMenu)
+				m.ChangeState(tui.AddLogin, tui.NotLoginMenu)
 				return m, nil
 			}
-			m.ChangeState(tui.SignUpForm, tui.NotLoginMenu)
+			m.ChangeState(tui.AddLogin, tui.MainMenu)
 			return m, nil
 		case "insert":
 			// Hide or show password.
@@ -92,7 +89,6 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 				rf.Inputs[2].EchoMode = textinput.EchoPassword
 			}
 			return m, nil
-
 		// Set focus to next input
 		case "tab", "shift+tab", "enter", "up", "down":
 			// Clean shown errors in menu.
@@ -114,13 +110,7 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 				rf.ansverError = err
 				if status == http.StatusOK {
 					rf.IsRegOk = true
-					// Save current user to model.
 					m.User = user
-					// Backup curent user.
-					err = backup.SaveUser(*user)
-					if err != nil {
-						zap.S().Errorln("Can't save user: ", err)
-					}
 					return m, nil
 				}
 				zap.S().Infof("Text inputs %d | %w", status, err)
@@ -155,6 +145,7 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 				rf.Inputs[i].PromptStyle = styles.NoStyle
 				rf.Inputs[i].TextStyle = styles.NoStyle
 			}
+
 			return m, tea.Batch(cmds...)
 		}
 	}
@@ -166,7 +157,7 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 }
 
 // The main view, which just calls the appropriate sub-view
-func (rf *RegisterForm) GetView(m *tui.Model) string {
+func (rf *AddLogin) GetView(m *tui.Model) string {
 	var b strings.Builder
 	b.WriteString("\n")
 	b.WriteString(styles.GopherQuestion.Render("Registration form:\n"))
@@ -206,7 +197,7 @@ func (rf *RegisterForm) GetView(m *tui.Model) string {
 }
 
 // Help functions
-func (rf *RegisterForm) updateInputs(msg tea.Msg) tea.Cmd {
+func (rf *AddLogin) updateInputs(msg tea.Msg) tea.Cmd {
 	cmds := make([]tea.Cmd, len(rf.Inputs))
 
 	// Only text inputs with Focus() set will respond, so it's safe to simply
@@ -219,7 +210,7 @@ func (rf *RegisterForm) updateInputs(msg tea.Msg) tea.Cmd {
 }
 
 // Reset all inputs and form errors.
-func (rf *RegisterForm) cleanform() {
+func (rf *AddLogin) cleanform() {
 	rf.ansver = false
 	rf.IsRegOk = false
 	rf.ansverCode = 0

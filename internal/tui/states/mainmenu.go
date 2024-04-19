@@ -4,8 +4,10 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/shulganew/GophKeeperClient/internal/app/backup"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/styles"
+	"go.uber.org/zap"
 )
 
 // Implemet State.
@@ -18,7 +20,7 @@ type MainMenu struct {
 }
 
 func NewMainMenu() MainMenu {
-	return MainMenu{Choices: []string{"Sites logins/pw", "Credit cards", "Secret text", "Sectret bin data", "Logout"}}
+	return MainMenu{Choices: []string{"Sites logins/pw", "Credit cards", "Secret text", "Sectret bin data", "Help", "Logout"}}
 }
 
 // Init is the first function that will be called. It returns an optional
@@ -28,12 +30,47 @@ func (mm *MainMenu) GetInit() tea.Cmd {
 }
 
 // Main update function.
-func (mm *MainMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tm tea.Model, tcmd tea.Cmd) {
-	// Add header.
+func (mm *MainMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "esc":
+			m.Quitting = true
+			return m, tea.Quit
+		case "down":
+			mm.Choice++
+			if mm.Choice > len(mm.Choices)-1 {
+				mm.Choice = 0
+			}
+		case "up":
+			mm.Choice--
+			if mm.Choice < 0 {
+				mm.Choice = len(mm.Choices) - 1
+			}
+		case "enter":
+			switch mm.Choice {
+			// Site's login and passes.
+			case 0:
+				m.ChangeState(tui.MainMenu, tui.LoginMenu)
+				return m, nil
+				// Credit cards.
+			case 1:
+				m.ChangeState(tui.MainMenu, tui.MainMenu)
+				return m, nil
+				// TODO
+				// Logout - delte userf from model, clean backup data, go to login menu
+			case 5:
+				err := backup.CleanData()
+				if err != nil {
+					zap.S().Errorln("Error clean user's tmp file: ", err)
+				}
+				m.Quitting = true
+				return m, tea.Quit
+			}
+		}
+	}
 
-	mm.updateChoices(m, msg)
-	tm, tcmd = GetDefaulUpdate(m, msg)
-	return tm, tcmd
+	return m, nil
 }
 
 // The main view, which just calls the appropriate sub-view
@@ -52,36 +89,6 @@ func (mm *MainMenu) GetView(m *tui.Model) string {
 
 // Method for working with views.
 //
-// Update loop for the first view where you're choosing a task.
-func (mm *MainMenu) updateChoices(m *tui.Model, msg tea.Msg) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "down":
-			mm.Choice++
-			if mm.Choice > len(mm.Choices)-1 {
-				mm.Choice = 0
-			}
-		case "up":
-			mm.Choice--
-			if mm.Choice < 0 {
-				mm.Choice = len(mm.Choices) - 1
-			}
-		case "enter":
-			switch mm.Choice {
-			// Log in
-			case 0:
-				m.ChangeState(tui.NotLoginState, tui.LoginForm)
-				// Sign up
-			case 1:
-				m.ChangeState(tui.NotLoginState, tui.SignUpForm)
-			}
-
-		}
-	}
-
-}
-
 // Choosing menu.
 func (mm *MainMenu) choicesRegister(m *tui.Model) string {
 	s := strings.Builder{}
@@ -91,7 +98,10 @@ func (mm *MainMenu) choicesRegister(m *tui.Model) string {
 	for i := 0; i < len(mm.Choices); i++ {
 		s.WriteString(Checkbox(mm.Choices[i], mm.Choice == i))
 		s.WriteString("\n")
+		// Add Help and logout Separator
+		if len(mm.Choices)-3 == i {
+			s.WriteString("\n")
+		}
 	}
-
 	return s.String()
 }

@@ -72,10 +72,10 @@ func (nl *NotLogin) updateChoices(m *tui.Model, msg tea.Msg) {
 			switch nl.Choice {
 			// Log in
 			case 0:
-				m.ChangeState(tui.NotLoginState, tui.LoginForm)
+				m.ChangeState(tui.NotLoginMenu, tui.LoginForm)
 				// Sign up
 			case 1:
-				m.ChangeState(tui.NotLoginState, tui.SignUpForm)
+				m.ChangeState(tui.NotLoginMenu, tui.SignUpForm)
 			}
 
 		}
