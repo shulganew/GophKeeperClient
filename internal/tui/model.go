@@ -25,6 +25,9 @@ const LoginForm = 1
 // User registration form.
 const SignUpForm = 2
 
+// Mani menu for loged in users.
+const MainMenu = 3
+
 // Interface for all states selection.
 type State interface {
 	GetInit() tea.Cmd
@@ -35,7 +38,7 @@ type State interface {
 type Model struct {
 	Conf          config.Config
 	User          entities.User // Store user after login or register.
-	IsUserSet     bool          // Quick check users registration.
+	IsUserLogedIn bool          // Quick check users registration.
 	Quitting      bool
 	CurrentState  int
 	PreviousState int
@@ -59,7 +62,8 @@ func (m Model) View() string {
 	return m.States[m.CurrentState].GetView(&m)
 }
 
-func (m *Model) ChanegeState(current, next int) {
+// State switcher.
+func (m *Model) ChangeState(current, next int) {
 	m.CurrentState = next
 	m.PreviousState = current
 }

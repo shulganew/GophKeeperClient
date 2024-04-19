@@ -9,43 +9,42 @@ import (
 )
 
 // Implemet State.
-var _ tui.State = (*NotLogin)(nil)
+var _ tui.State = (*MainMenu)(nil)
 
-// Not login menu, state 0
-// Menu for registration and log in.
-type NotLogin struct {
+// Main menu for log in users, state 3
+type MainMenu struct {
 	Choices []string
 	Choice  int
 }
 
-func NewNotLogin() NotLogin {
-	return NotLogin{Choices: []string{"Log In", "Sign Up"}}
+func NewMainMenu() MainMenu {
+	return MainMenu{Choices: []string{"Sites logins/pw", "Credit cards", "Secret text", "Sectret bin data", "Logout"}}
 }
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (nl *NotLogin) GetInit() tea.Cmd {
+func (mm *MainMenu) GetInit() tea.Cmd {
 	return nil
 }
 
 // Main update function.
-func (nl *NotLogin) GetUpdate(m *tui.Model, msg tea.Msg) (tm tea.Model, tcmd tea.Cmd) {
+func (mm *MainMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tm tea.Model, tcmd tea.Cmd) {
 	// Add header.
 
-	nl.updateChoices(m, msg)
+	mm.updateChoices(m, msg)
 	tm, tcmd = GetDefaulUpdate(m, msg)
 	return tm, tcmd
 }
 
 // The main view, which just calls the appropriate sub-view
-func (nl *NotLogin) GetView(m *tui.Model) string {
+func (mm *MainMenu) GetView(m *tui.Model) string {
 	s := strings.Builder{}
 	s.WriteString(GetHeaderView())
 	if m.Quitting {
 		s.WriteString("\n  See you later!\n\n")
 	}
 
-	s.WriteString(nl.choicesRegister())
+	s.WriteString(mm.choicesRegister(m))
 
 	s.WriteString(GetHelpView())
 	return s.String()
@@ -54,22 +53,22 @@ func (nl *NotLogin) GetView(m *tui.Model) string {
 // Method for working with views.
 //
 // Update loop for the first view where you're choosing a task.
-func (nl *NotLogin) updateChoices(m *tui.Model, msg tea.Msg) {
+func (mm *MainMenu) updateChoices(m *tui.Model, msg tea.Msg) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "down":
-			nl.Choice++
-			if nl.Choice > len(nl.Choices)-1 {
-				nl.Choice = 0
+			mm.Choice++
+			if mm.Choice > len(mm.Choices)-1 {
+				mm.Choice = 0
 			}
 		case "up":
-			nl.Choice--
-			if nl.Choice < 0 {
-				nl.Choice = len(nl.Choices) - 1
+			mm.Choice--
+			if mm.Choice < 0 {
+				mm.Choice = len(mm.Choices) - 1
 			}
 		case "enter":
-			switch nl.Choice {
+			switch mm.Choice {
 			// Log in
 			case 0:
 				m.ChangeState(tui.NotLoginState, tui.LoginForm)
@@ -84,13 +83,13 @@ func (nl *NotLogin) updateChoices(m *tui.Model, msg tea.Msg) {
 }
 
 // Choosing menu.
-func (nl *NotLogin) choicesRegister() string {
+func (mm *MainMenu) choicesRegister(m *tui.Model) string {
 	s := strings.Builder{}
 	s.WriteString("\n")
-	s.WriteString(styles.GopherQuestion.Render("You are not authorized, Log In or Sign Up:"))
+	s.WriteString(styles.GopherQuestion.Render("Hello, ", m.User.Login, ", choose your secters:"))
 	s.WriteString("\n\n")
-	for i := 0; i < len(nl.Choices); i++ {
-		s.WriteString(Checkbox(nl.Choices[i], nl.Choice == i))
+	for i := 0; i < len(mm.Choices); i++ {
+		s.WriteString(Checkbox(mm.Choices[i], mm.Choice == i))
 		s.WriteString("\n")
 	}
 

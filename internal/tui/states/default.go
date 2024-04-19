@@ -11,7 +11,6 @@ import (
 )
 
 // Set of faunctions with default behavior, contanins blank menu items.
-
 func GetDefaulInit() tea.Cmd {
 	return nil
 }
@@ -29,10 +28,13 @@ func GetDefaulUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// Default header.
 func GetHeaderView() string {
 	return styles.GopherHeader.Render(fmt.Sprintf("GopherKeeper client, build version: 1.0.0, pid %d \n\n", os.Getpid()))
 
 }
+
+// Help default menu
 func GetHelpView() string {
 	s := strings.Builder{}
 	s.WriteString("\n\n")
@@ -42,4 +44,12 @@ func GetHelpView() string {
 	s.WriteString(styles.DotStyle)
 	s.WriteString(styles.SubtleStyle.Render("<Esc>: quit"))
 	return s.String()
+}
+
+// Switch checked menu in all menus
+func Checkbox(label string, checked bool) string {
+	if checked {
+		return styles.CheckboxStyleSelected.Render("[x] " + label)
+	}
+	return styles.CheckboxStyle.Render(fmt.Sprintf("[ ] %s", label))
 }

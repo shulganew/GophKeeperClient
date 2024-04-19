@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/shulganew/GophKeeperClient/internal/client"
@@ -17,12 +16,13 @@ import (
 // Implemet State.
 var _ tui.State = (*RegisterForm)(nil)
 
+const InputsRegister = 3
+
 // RegisterForm, state 2
 // Inputs: login, email, pw, pw (check corret input)
 type RegisterForm struct {
 	focusIndex  int
 	Inputs      []textinput.Model
-	cursorMode  cursor.Mode
 	ansver      bool  // Add info message if servier send answer.
 	IsRegOk     bool  // Successful registration.
 	ansverCode  int   // Servier answer code.
@@ -31,7 +31,7 @@ type RegisterForm struct {
 
 func NewRegisterForm() RegisterForm {
 	rf := RegisterForm{
-		Inputs: make([]textinput.Model, 3),
+		Inputs: make([]textinput.Model, InputsRegister),
 	}
 
 	var t textinput.Model
@@ -42,7 +42,7 @@ func NewRegisterForm() RegisterForm {
 
 		switch i {
 		case 0:
-			t.Placeholder = "Nickname"
+			t.Placeholder = "Login"
 			t.Focus()
 			t.PromptStyle = styles.FocusedStyle
 			t.TextStyle = styles.FocusedStyle
@@ -76,30 +76,28 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
-			m.ChanegeState(tui.LoginForm, tui.NotLoginState)
+			rf.cleanform()
+			if m.IsUserLogedIn {
+				m.ChangeState(tui.SignUpForm, tui.MainMenu)
+				return m, nil
+			}
+			m.ChangeState(tui.SignUpForm, tui.NotLoginState)
 			return m, nil
-
-		// Change cursor mode
-		case "ctrl+r":
-			rf.cursorMode++
-			if rf.cursorMode > cursor.CursorHide {
-				rf.cursorMode = cursor.CursorBlink
-			}
-			cmds := make([]tea.Cmd, len(rf.Inputs))
-			for i := range rf.Inputs {
-				cmds[i] = rf.Inputs[i].Cursor.SetMode(rf.cursorMode)
-			}
-			return m, tea.Batch(cmds...)
 
 		// Set focus to next input
 		case "tab", "shift+tab", "enter", "up", "down":
+			// Clean shown errors in menu.
+			rf.ansver = false
 			s := msg.String()
+			// If user registration done, enter for continue...
+			if rf.IsRegOk {
+				rf.cleanform()
+				m.ChangeState(tui.SignUpForm, tui.MainMenu)
+				return m, nil
+			}
 			// Submit button pressed!
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
-				// If user registration done, enter for continue...
-				if rf.IsRegOk {
-					m.ChanegeState(tui.SignUpForm, tui.NotLoginState)
-				}
+
 				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
 				user, status, err := client.UserReg(m.Conf, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
 				rf.ansver = true
@@ -108,7 +106,7 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 				if status == http.StatusOK {
 					rf.IsRegOk = true
 					m.User = *user
-
+					return m, nil
 				}
 				zap.S().Infof("Text inputs %d | %w", status, err)
 
@@ -173,24 +171,22 @@ func (rf *RegisterForm) GetView(m *tui.Model) string {
 	fmt.Fprintf(&b, "\n\n%s\n\n", *button)
 	if rf.ansver {
 		if rf.ansverCode == http.StatusOK {
-			b.WriteString(styles.GopherQuestion.Render("User registerd successful: ", m.User.Login))
+			b.WriteString(styles.OkStyle1.Render("User registerd successful: ", m.User.Login))
 			b.WriteString("\n\n")
 			b.WriteString(styles.GopherQuestion.Render("Press <Enter> to continue... "))
 			b.WriteString("\n\n")
 		} else {
-			b.WriteString(styles.GopherQuestion.Render("Server ansver with code: ", fmt.Sprint(rf.ansverCode)))
+			b.WriteString(styles.ErrorStyle.Render("Server ansver with code: ", fmt.Sprint(rf.ansverCode)))
 			b.WriteString("\n\n")
 		}
 
 	}
 	if rf.ansverError != nil {
-		b.WriteString(styles.GopherQuestion.Render(fmt.Sprintf("Error: %s", rf.ansverError.Error())))
+		b.WriteString(styles.ErrorStyle.Render(fmt.Sprintf("Error: %s", rf.ansverError.Error())))
 		b.WriteString("\n")
 	}
 	b.WriteString("\n\n")
-	b.WriteString(styles.HelpStyle.Render("cursor mode is "))
-	b.WriteString(styles.CursorModeHelpStyle.Render(rf.cursorMode.String()))
-	b.WriteString(styles.HelpStyle.Render(" (<ctrl+r> to change style), <Esc> - back to menu."))
+	b.WriteString(styles.HelpStyle.Render("<Esc> - back to menu."))
 
 	return b.String()
 }
@@ -206,4 +202,12 @@ func (rf *RegisterForm) updateInputs(msg tea.Msg) tea.Cmd {
 	}
 
 	return tea.Batch(cmds...)
+}
+
+// Reset all inputs and form errors.
+func (rf *RegisterForm) cleanform() {
+	rf.ansver = false
+	rf.IsRegOk = false
+	rf.ansverCode = 0
+	rf.ansverError = nil
 }

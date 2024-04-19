@@ -47,10 +47,13 @@ func InitLog() zap.SugaredLogger {
 
 func InitModel(conf config.Config) tea.Model {
 	// Init Not Login, state 0.
-	nl := states.NotLogin{Choices: []string{"Log In", "Sign Up"}}
+	nl := states.NewNotLogin()
 	// Login form, state 1.
 	lf := states.NewLoginForm()
 	// Register form - state 2.
 	rf := states.NewRegisterForm()
-	return tui.Model{Conf: conf, CurrentState: 0, States: []tui.State{&nl, &lf, &rf}}
+	// Main menu for loged in users. State 3.
+	mm := states.NewMainMenu()
+
+	return tui.Model{Conf: conf, CurrentState: 0, States: []tui.State{&nl, &lf, &rf, &mm}}
 }

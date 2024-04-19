@@ -1,56 +1,59 @@
 package client
 
-/*
+import (
+	"bytes"
+	"database/sql"
+	"encoding/json"
+	"net/http"
+	"net/url"
+	"strings"
 
-func UserLogin(login, pw string) {
+	"github.com/go-resty/resty/v2"
+	"github.com/shulganew/GophKeeperClient/internal/app/config"
+	"github.com/shulganew/GophKeeperClient/internal/entities"
+	"go.uber.org/zap"
+)
 
-	var user model.User
-
-	reqBodyDel := bytes.NewBuffer([]byte{})
-
-	err = json.NewEncoder(reqBodyDel).Encode(&users[nUser])
+func UserLogin(conf config.Config, login, pw string) (user *entities.User, status int, err error) {
+	// Create user.
+	user = &entities.User{Login: login, Password: pw}
+	// Encode to json.
+	bodyUser := bytes.NewBuffer([]byte{})
+	err = json.NewEncoder(bodyUser).Encode(&user)
 	if err != nil {
-		panic(err)
+		return nil, http.StatusInternalServerError, err
 	}
 
-	client := &http.Client{}
-	request, err := http.NewRequest(http.MethodPost, "http://localhost:8088/api/user/login", reqBodyDel)
+	// Make requset to server.
+	url := url.URL{Scheme: config.Shema, Host: conf.Address, Path: config.LoginPath}
+	zap.S().Debugln("Login URL: ", url)
+
+	client := resty.New()
+	res, err := client.R().
+		SetBody(bodyUser).
+		SetHeader("Content-Type", "application/json").
+		Post(url.String())
 	if err != nil {
-		fmt.Println(err)
+		return nil, http.StatusInternalServerError, err
 	}
 
-	// add jwt
-	request.Header.Add("Authorization", users[nUser].JWT.String)
-
-	//reqest
-	request.Header.Add("Content-Type", "application/json")
-	res, err := client.Do(request)
-	if err != nil {
-		panic(err)
+	// Print to log file for debug level.
+	for k, v := range res.Header() {
+		zap.S().Debugf("%s: %v\r\n", k, v[0])
 	}
 
-	//=============================Response===================
-	for k, v := range res.Header {
-
-		fmt.Printf("%s: %v\r\n", k, v[0])
-
+	zap.S().Debugln("Body: ", string(res.Body()))
+	zap.S().Debugf("Status Code: %d\r\n", res.StatusCode)
+	authHeader := res.Header().Get("Authorization")
+	zap.S().Debugln("authHeader: ", authHeader)
+	if strings.HasPrefix(authHeader, authPrefix) {
+		jwt := authHeader[len(authPrefix):]
+		user.JWT = sql.NullString{String: jwt, Valid: true}
+	} else {
+		user.JWT = sql.NullString{String: "", Valid: false}
 	}
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println("Body: ", string(body))
-	fmt.Printf("Status Code: %d\r\n", res.StatusCode)
-
-	//jwt := res.Header.Get("Authorization")[len("Bearer "):]
-	jwt := res.Header.Get("Authorization")
-
-	_, err = conn.Exec(ctx, "UPDATE users SET jwt = $1", jwt)
-	if err != nil {
-		panic(err)
-	}
+	zap.S().Infoln(user.JWT, user.Login, user.Password)
+	return user, res.StatusCode(), nil
 
 }
-*/

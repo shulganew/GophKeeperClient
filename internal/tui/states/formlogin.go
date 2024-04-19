@@ -2,29 +2,35 @@ package states
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/shulganew/GophKeeperClient/internal/client"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/styles"
 	"go.uber.org/zap"
 )
+
+const inputsLogin = 2
 
 // Implemet State.
 var _ tui.State = (*LoginForm)(nil)
 
 // LoginForm, state 1
 type LoginForm struct {
-	focusIndex int
-	Inputs     []textinput.Model
-	cursorMode cursor.Mode
+	focusIndex  int
+	Inputs      []textinput.Model
+	ansver      bool  // Add info message if servier send answer.
+	IsLogInOk   bool  // Successful registration.
+	ansverCode  int   // Servier answer code.
+	ansverError error // Servier answer error.
 }
 
 func NewLoginForm() LoginForm {
 	lf := LoginForm{
-		Inputs: make([]textinput.Model, 2),
+		Inputs: make([]textinput.Model, inputsLogin),
 	}
 
 	var t textinput.Model
@@ -35,19 +41,19 @@ func NewLoginForm() LoginForm {
 
 		switch i {
 		case 0:
-			t.Placeholder = "Nickname"
+			t.Placeholder = "Login"
 			t.Focus()
 			t.PromptStyle = styles.FocusedStyle
 			t.TextStyle = styles.FocusedStyle
+			t.SetValue("igor")
 		case 1:
 			t.Placeholder = "Password"
 			t.EchoMode = textinput.EchoPassword
 			t.EchoCharacter = '•'
+			t.SetValue("123")
 		}
-
 		lf.Inputs[i] = t
 	}
-
 	return lf
 }
 
@@ -62,30 +68,39 @@ func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
-			m.ChanegeState(tui.LoginForm, tui.NotLoginState)
+			lf.cleanform()
+			if m.IsUserLogedIn {
+				m.ChangeState(tui.LoginForm, tui.MainMenu)
+				return m, nil
+			}
+			m.ChangeState(tui.LoginForm, tui.NotLoginState)
 			return m, nil
-
-		// Change cursor mode
-		case "ctrl+r":
-			lf.cursorMode++
-			if lf.cursorMode > cursor.CursorHide {
-				lf.cursorMode = cursor.CursorBlink
-			}
-			cmds := make([]tea.Cmd, len(lf.Inputs))
-			for i := range lf.Inputs {
-				cmds[i] = lf.Inputs[i].Cursor.SetMode(lf.cursorMode)
-			}
-			return m, tea.Batch(cmds...)
 
 		// Set focus to next input
 		case "tab", "shift+tab", "enter", "up", "down":
+			// Clean shown errors in menu.
+			lf.ansver = false
 			s := msg.String()
-
-			// Submit button pressed.
+			// Loged in, exit.
+			if lf.IsLogInOk {
+				lf.cleanform()
+				m.ChangeState(tui.LoginForm, tui.MainMenu)
+				return m, nil
+			}
+			// Submit button pressed!
 			if s == "enter" && lf.focusIndex == len(lf.Inputs) {
 				zap.S().Infof("Text inputs %s  %s", lf.Inputs[0].Value(), lf.Inputs[1].Value())
+				user, status, err := client.UserLogin(m.Conf, lf.Inputs[0].Value(), lf.Inputs[1].Value())
+				lf.ansver = true
+				lf.ansverCode = status
+				lf.ansverError = err
+				if status == http.StatusOK {
+					lf.IsLogInOk = true
+					m.User = *user
+					return m, nil
 
-				return m, nil
+				}
+				zap.S().Infof("Text inputs %d | %w", status, err)
 			}
 
 			// Cycle indexes
@@ -122,7 +137,6 @@ func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Handle character input and blinking
 	cmd := lf.updateInputs(msg)
-
 	return m, cmd
 }
 
@@ -144,15 +158,29 @@ func (lf *LoginForm) GetView(m *tui.Model) string {
 		button = &styles.FocusedButton
 	}
 	fmt.Fprintf(&b, "\n\n%s\n\n", *button)
+	if lf.ansver {
+		if lf.ansverCode == http.StatusOK {
+			b.WriteString(styles.OkStyle1.Render("User loged in successful: ", m.User.Login))
+			b.WriteString("\n\n")
+			b.WriteString(styles.GopherQuestion.Render("Press <Enter> to continue... "))
+			b.WriteString("\n\n")
+		} else {
+			b.WriteString(styles.ErrorStyle.Render("Server ansver with code: ", fmt.Sprint(lf.ansverCode)))
+			b.WriteString("\n\n")
+		}
 
-	b.WriteString(styles.HelpStyle.Render("cursor mode is "))
-	b.WriteString(styles.CursorModeHelpStyle.Render(lf.cursorMode.String()))
-	b.WriteString(styles.HelpStyle.Render(" (ctrl+r to change style), esc - back to menu."))
+	}
+	if lf.ansverError != nil {
+		b.WriteString(styles.ErrorStyle.Render(fmt.Sprintf("Error: %s", lf.ansverError.Error())))
+		b.WriteString("\n")
+	}
+	b.WriteString("\n\n")
+	b.WriteString(styles.HelpStyle.Render("<Esc> - back to menu."))
 
 	return b.String()
 }
 
-// Help functions
+// Help functions.
 func (lf *LoginForm) updateInputs(msg tea.Msg) tea.Cmd {
 	cmds := make([]tea.Cmd, len(lf.Inputs))
 
@@ -163,4 +191,12 @@ func (lf *LoginForm) updateInputs(msg tea.Msg) tea.Cmd {
 	}
 
 	return tea.Batch(cmds...)
+}
+
+// Reset all inputs and form errors.
+func (lf *LoginForm) cleanform() {
+	lf.ansver = false
+	lf.IsLogInOk = false
+	lf.ansverCode = 0
+	lf.ansverError = nil
 }
