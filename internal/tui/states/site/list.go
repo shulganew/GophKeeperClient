@@ -1,4 +1,4 @@
-package loginpw
+package site
 
 import (
 	"fmt"

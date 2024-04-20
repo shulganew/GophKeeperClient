@@ -171,6 +171,11 @@ func (lf *LoginForm) GetView(m *tui.Model) string {
 			b.WriteString(styles.GopherQuestion.Render("Press <Enter> to continue... "))
 			b.WriteString("\n\n")
 		} else {
+			if lf.ansverCode == http.StatusUnauthorized {
+				b.WriteString(styles.ErrorStyle.Render("Login or password not correct."))
+				b.WriteString("\n")
+			}
+
 			b.WriteString(styles.ErrorStyle.Render("Server ansver with code: ", fmt.Sprint(lf.ansverCode)))
 			b.WriteString("\n\n")
 		}

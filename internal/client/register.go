@@ -48,6 +48,8 @@ func UserReg(conf config.Config, login, email, pw string) (user *entities.User, 
 
 	zap.S().Debugln("Body: ", string(res.Body()))
 	zap.S().Debugf("Status Code: %d\r\n", res.StatusCode)
+
+	// Get JWT token.
 	authHeader := res.Header().Get("Authorization")
 	zap.S().Debugln("authHeader: ", authHeader)
 	if strings.HasPrefix(authHeader, authPrefix) {

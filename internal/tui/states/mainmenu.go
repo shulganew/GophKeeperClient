@@ -64,8 +64,8 @@ func (mm *MainMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err != nil {
 					zap.S().Errorln("Error clean user's tmp file: ", err)
 				}
-				m.Quitting = true
-				return m, tea.Quit
+				m.ChangeState(tui.MainMenu, tui.NotLoginMenu)
+				return m, nil
 			}
 		}
 	}

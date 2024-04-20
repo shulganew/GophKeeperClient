@@ -1,4 +1,4 @@
-package loginpw
+package site
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ type AddLogin struct {
 	focusIndex  int
 	Inputs      []textinput.Model
 	ansver      bool  // Add info message if servier send answer.
-	IsRegOk     bool  // Successful registration.
+	IsAddOk     bool  // Successful registration.
 	ansverCode  int   // Servier answer code.
 	ansverError error // Servier answer error.
 }
@@ -76,10 +76,10 @@ func (rf *AddLogin) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "esc":
 			rf.cleanform()
 			if m.IsUserLogedIn {
-				m.ChangeState(tui.AddLogin, tui.NotLoginMenu)
+				m.ChangeState(tui.SiteAdd, tui.NotLoginMenu)
 				return m, nil
 			}
-			m.ChangeState(tui.AddLogin, tui.MainMenu)
+			m.ChangeState(tui.SiteAdd, tui.MainMenu)
 			return m, nil
 		case "insert":
 			// Hide or show password.
@@ -94,23 +94,21 @@ func (rf *AddLogin) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Clean shown errors in menu.
 			rf.ansver = false
 			s := msg.String()
-			// If user registration done, enter for continue...
-			if rf.IsRegOk {
+			// If user adding done success, enter for continue...
+			if rf.IsAddOk {
 				rf.cleanform()
-				m.ChangeState(tui.SignUpForm, tui.MainMenu)
+				m.ChangeState(tui.SiteAdd, tui.MainMenu)
 				return m, nil
 			}
 			// Submit button pressed!
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
-
 				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
-				user, status, err := client.UserReg(m.Conf, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
+				status, err := client.SiteAdd(m.Conf, *m.User, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
 				rf.ansver = true
 				rf.ansverCode = status
 				rf.ansverError = err
-				if status == http.StatusOK {
-					rf.IsRegOk = true
-					m.User = user
+				if status == http.StatusCreated {
+					rf.IsAddOk = true
 					return m, nil
 				}
 				zap.S().Infof("Text inputs %d | %w", status, err)
@@ -160,7 +158,7 @@ func (rf *AddLogin) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 func (rf *AddLogin) GetView(m *tui.Model) string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(styles.GopherQuestion.Render("Registration form:\n"))
+	b.WriteString(styles.GopherQuestion.Render("Add new sited with login and password:\n"))
 	b.WriteString("\n")
 	for i := range rf.Inputs {
 		b.WriteString(rf.Inputs[i].View())
@@ -175,7 +173,7 @@ func (rf *AddLogin) GetView(m *tui.Model) string {
 	}
 	fmt.Fprintf(&b, "\n\n%s\n\n", *button)
 	if rf.ansver {
-		if rf.ansverCode == http.StatusOK {
+		if rf.ansverCode == http.StatusCreated {
 			b.WriteString(styles.OkStyle1.Render("User registerd successful: ", m.User.Login))
 			b.WriteString("\n\n")
 			b.WriteString(styles.GopherQuestion.Render("Press <Enter> to continue... "))
@@ -212,7 +210,7 @@ func (rf *AddLogin) updateInputs(msg tea.Msg) tea.Cmd {
 // Reset all inputs and form errors.
 func (rf *AddLogin) cleanform() {
 	rf.ansver = false
-	rf.IsRegOk = false
+	rf.IsAddOk = false
 	rf.ansverCode = 0
 	rf.ansverError = nil
 }

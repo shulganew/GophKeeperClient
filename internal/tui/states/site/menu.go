@@ -1,4 +1,4 @@
-package loginpw
+package site
 
 import (
 	"strings"
@@ -54,7 +54,7 @@ func (lm *LoginMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.ChangeState(tui.LoginMenu, tui.LoginMenu)
 			// Add NEW.
 			case 1:
-				m.ChangeState(tui.LoginMenu, tui.AddLogin)
+				m.ChangeState(tui.LoginMenu, tui.SiteAdd)
 			// Give access.
 			case 2:
 				m.ChangeState(tui.LoginMenu, tui.LoginMenu)

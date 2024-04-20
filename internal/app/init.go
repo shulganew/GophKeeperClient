@@ -6,7 +6,7 @@ import (
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states"
-	"github.com/shulganew/GophKeeperClient/internal/tui/states/loginpw"
+	"github.com/shulganew/GophKeeperClient/internal/tui/states/site"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -71,11 +71,11 @@ func InitModel(conf config.Config) tea.Model {
 	//
 	// Menu: Save site's login and passwords. 4
 	//
-	lm := loginpw.NewLoginMenu()
+	lm := site.NewLoginMenu()
 	// List site's login and passwords 5
-	ll := loginpw.NewListLogin()
+	ll := site.NewListLogin()
 	// Add site's login and passwords 6
-	al := loginpw.NewAddLogin()
+	al := site.NewAddLogin()
 
 	return tui.Model{Conf: conf, CurrentState: cSate, States: []tui.State{&nl, &lf, &rf, &mm, &lm, &ll, &al}, User: user}
 }

@@ -7,6 +7,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/charmbracelet/lipgloss v0.10.0
 	github.com/go-resty/resty/v2 v2.12.0
+	github.com/gofrs/uuid v4.4.0+incompatible
 	go.uber.org/zap v1.27.0
 )
 

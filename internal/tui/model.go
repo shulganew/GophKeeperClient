@@ -35,7 +35,7 @@ const LoginMenu = 4
 const ListLogin = 5
 
 // Add site's logins and passwords.
-const AddLogin = 6
+const SiteAdd = 6
 
 // Interface for all states selection.
 type State interface {
@@ -47,7 +47,7 @@ type State interface {
 type Model struct {
 	Conf          config.Config
 	User          *entities.User // Store user after login or register.
-	IsUserLogedIn bool          // Quick check users registration.
+	IsUserLogedIn bool           // Quick check users registration.
 	Quitting      bool
 	CurrentState  int
 	PreviousState int

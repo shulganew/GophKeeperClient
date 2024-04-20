@@ -9,8 +9,10 @@ import (
 	"go.uber.org/zap"
 )
 
-const RegisterPath = "/api/user/register"
-const LoginPath = "/api/user/login"
+const AuthPrefix = "Bearer "
+const RegisterPath = "/api/user/auth/register"
+const LoginPath = "/api/user/auth/login"
+const SiteAddPath = "/api/user/site/add"
 const Shema = "http"
 const TokenExp = time.Hour * 3600
 const DataBaseType = "postgres"
