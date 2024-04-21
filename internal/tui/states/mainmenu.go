@@ -55,10 +55,9 @@ func (mm *MainMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 				// Credit cards.
 			case 1:
-				m.ChangeState(tui.MainMenu, tui.MainMenu)
+				m.ChangeState(tui.MainMenu, tui.CcardAdd)
 				return m, nil
-				// TODO
-				// Logout - delte userf from model, clean backup data, go to login menu
+
 			case 5:
 				err := backup.CleanData()
 				if err != nil {

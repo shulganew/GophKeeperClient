@@ -37,6 +37,27 @@ const ListLogin = 5
 // Add site's logins and passwords.
 const SiteAdd = 6
 
+// List site's logins and passwords.
+const SiteList = 7
+
+// Edit site's logins and passwords.
+const SiteEdit = 8
+
+// TODO Gand site's logins and passwords to othes users.
+const SiteGrand = 9
+
+// TODO Rezerved for Igor's ideas.
+const Reserved = 10
+
+// Add credit card.
+const CcardAdd = 11
+
+// TODO Add text data to system.
+const TextAdd = 15
+
+// TODO Add binary data to system.
+const TextBin = 21
+
 // Interface for all states selection.
 type State interface {
 	GetInit() tea.Cmd

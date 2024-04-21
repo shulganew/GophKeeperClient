@@ -6,6 +6,7 @@ import (
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states"
+	"github.com/shulganew/GophKeeperClient/internal/tui/states/ccard"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states/site"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -59,23 +60,30 @@ func InitModel(conf config.Config) tea.Model {
 	//
 	// Menu: Init Not Login, state 0.
 	//
-	nl := states.NewNotLogin()
+	nl0 := states.NewNotLogin()
 	// Login form, state 1.
-	lf := states.NewLoginForm()
+	lf1 := states.NewLoginForm()
 	// Register form - state 2.
-	rf := states.NewRegisterForm()
+	rf2 := states.NewRegisterForm()
 	//
 	// Menu: Main menu for loged in users. State 3.
 	//
-	mm := states.NewMainMenu()
+	mm3 := states.NewMainMenu()
 	//
 	// Menu: Save site's login and passwords. 4
 	//
-	lm := site.NewLoginMenu()
+	lm4 := site.NewLoginMenu()
 	// List site's login and passwords 5
-	ll := site.NewListLogin()
+	ll5 := site.NewListLogin()
 	// Add site's login and passwords 6
-	al := site.NewAddLogin()
+	al6 := site.NewAddLogin()
+	// TODO 7-10  temp chops
+	stub7 := states.NewMainMenu()
+	stub8 := states.NewMainMenu()
+	stub9 := states.NewMainMenu()
+	stub10 := states.NewMainMenu()
+	// Add site's login and passwords 11
+	ca11 := ccard.NewCardAdd()
 
-	return tui.Model{Conf: conf, CurrentState: cSate, States: []tui.State{&nl, &lf, &rf, &mm, &lm, &ll, &al}, User: user}
+	return tui.Model{Conf: conf, CurrentState: cSate, States: []tui.State{&nl0, &lf1, &rf2, &mm3, &lm4, &ll5, &al6, &stub7, &stub8, &stub9, &stub10, &ca11}, User: user}
 }

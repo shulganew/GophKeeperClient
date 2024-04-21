@@ -174,7 +174,7 @@ func (rf *AddLogin) GetView(m *tui.Model) string {
 	fmt.Fprintf(&b, "\n\n%s\n\n", *button)
 	if rf.ansver {
 		if rf.ansverCode == http.StatusCreated {
-			b.WriteString(styles.OkStyle1.Render("User registerd successful: ", m.User.Login))
+			b.WriteString(styles.OkStyle1.Render("Site info successfuly added: ", m.User.Login))
 			b.WriteString("\n\n")
 			b.WriteString(styles.GopherQuestion.Render("Press <Enter> to continue... "))
 			b.WriteString("\n\n")
