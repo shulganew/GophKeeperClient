@@ -6,6 +6,12 @@ https://github.com/shulganew/GophKeeper
 Client:
 https://github.com/shulganew/GophKeeperClient
 
+## Generate oapi
+Use make or bash command or //TODO build generate
+```
+make oapi
+
+
 ## Current questions
 Привет!
 Пытаюсь делать проект по частям, сделал базовую регистрацию и логирование для клиента и севера. Посмотри, пожалуйста.

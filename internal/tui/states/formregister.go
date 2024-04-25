@@ -1,6 +1,7 @@
 package states
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -108,11 +109,11 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
 
 				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
-				user, status, err := client.UserReg(m.Conf, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
+				user, status, err := client.UserReg(context.Background(), m.Conf, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
 				rf.ansver = true
 				rf.ansverCode = status
 				rf.ansverError = err
-				if status == http.StatusOK {
+				if status == http.StatusCreated {
 					rf.IsRegOk = true
 					// Save current user to model.
 					m.User = user
@@ -184,7 +185,7 @@ func (rf *RegisterForm) GetView(m *tui.Model) string {
 	}
 	fmt.Fprintf(&b, "\n\n%s\n\n", *button)
 	if rf.ansver {
-		if rf.ansverCode == http.StatusOK {
+		if rf.ansverCode == http.StatusCreated {
 			b.WriteString(styles.OkStyle1.Render("User registerd successful: ", m.User.Login))
 			b.WriteString("\n\n")
 			b.WriteString(styles.GopherQuestion.Render("Press <Enter> to continue... "))

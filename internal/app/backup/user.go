@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/shulganew/GophKeeperClient/internal/entities"
+	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 )
 
 // Backup current User to tmp file.
-func SaveUser(u entities.User) error {
+func SaveUser(u oapi.User) error {
 	// Save user to file.
 	file, error := os.OpenFile(getBackupPath(), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if error != nil {
@@ -26,12 +26,12 @@ func SaveUser(u entities.User) error {
 }
 
 // Load backup User from tmp file.
-func LoadUser() (user *entities.User, err error) {
+func LoadUser() (user *oapi.User, err error) {
 	file, err := os.Open(getBackupPath())
 	if err != nil {
 		return nil, err
 	}
-	u := &entities.User{}
+	u := &oapi.User{}
 	err = json.NewDecoder(file).Decode(u)
 	if err != nil {
 		return nil, err

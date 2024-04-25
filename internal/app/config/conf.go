@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"net/url"
 	"os"
 	"time"
 
@@ -10,9 +11,6 @@ import (
 )
 
 const AuthPrefix = "Bearer "
-const RegisterPath = "/api/user/auth/register"
-const LoginPath = "/api/user/auth/login"
-const SiteAddPath = "/api/user/site/add"
 const Shema = "http"
 const TokenExp = time.Hour * 3600
 const DataBaseType = "postgres"
@@ -31,7 +29,8 @@ func InitConfig() *Config {
 	// Check and parse URL
 	startaddr, startport := validators.CheckURL(*serverAddress)
 	// Server address
-	config.Address = startaddr + ":" + startport
+	u := url.URL{Scheme: Shema, Host: startaddr + ":" + startport}
+	config.Address = u.String()
 
 	// read OS ENVs
 	addr, exist := os.LookupEnv(("RUN_ADDRESS"))

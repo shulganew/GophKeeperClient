@@ -1,6 +1,7 @@
 package site
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -104,7 +105,7 @@ func (ll *ListLogin) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s == "enter" && ll.focusIndex == len(ll.Inputs) {
 
 				zap.S().Infof("Text inputs %s  %s", ll.Inputs[0].Value(), ll.Inputs[1].Value(), ll.Inputs[2].Value())
-				user, status, err := client.UserReg(m.Conf, ll.Inputs[0].Value(), ll.Inputs[1].Value(), ll.Inputs[2].Value())
+				user, status, err := client.UserReg(context.Background(), m.Conf, ll.Inputs[0].Value(), ll.Inputs[1].Value(), ll.Inputs[2].Value())
 				ll.ansver = true
 				ll.ansverCode = status
 				ll.ansverError = err

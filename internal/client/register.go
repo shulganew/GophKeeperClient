@@ -1,64 +1,51 @@
 package client
 
 import (
-	"bytes"
-	"database/sql"
-	"encoding/json"
+	"context"
+	"log"
 	"net/http"
-	"net/url"
 	"strings"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
-	"github.com/shulganew/GophKeeperClient/internal/entities"
+	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 	"go.uber.org/zap"
 )
 
 const authPrefix = "Bearer "
 
-func UserReg(conf config.Config, login, email, pw string) (user *entities.User, status int, err error) {
-	// Create user.
-	user = &entities.User{Login: login, Email: email, Password: pw}
-	// Encode to json.
-	bodyUser := bytes.NewBuffer([]byte{})
-	err = json.NewEncoder(bodyUser).Encode(&user)
+func UserReg(ctx context.Context, conf config.Config, login, email, pw string) (user *oapi.User, status int, err error) {
+	user = &oapi.User{Login: login, Email: email, Password: pw}
+	// custom HTTP client
+	hc := http.Client{}
+
+	// with a raw http.Response
+
+	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(&hc))
 	if err != nil {
-		return nil, http.StatusInternalServerError, err
+		log.Fatal(err)
 	}
 
-	// Make requset to server.
-
-	url := url.URL{Scheme: config.Shema, Host: conf.Address, Path: config.RegisterPath}
-	zap.S().Debugln("Register URL: ", url)
-
-	client := resty.New()
-	res, err := client.R().
-		SetBody(bodyUser).
-		SetHeader("Content-Type", "application/json").
-		Post(url.String())
-
+	resp, err := c.UserRegGen(ctx, oapi.User{Login: login, Email: email, Password: pw})
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
 
 	// Print to log file for debug level.
-	for k, v := range res.Header() {
+	for k, v := range resp.Header {
 		zap.S().Debugf("%s: %v\r\n", k, v[0])
 	}
 
-	zap.S().Debugln("Body: ", string(res.Body()))
-	zap.S().Debugf("Status Code: %d\r\n", res.StatusCode)
+	zap.S().Debugln("Body: ", resp.Body)
+	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
 
-	// Get JWT token.
-	authHeader := res.Header().Get("Authorization")
+	// Get JWT token and save to User
+	authHeader := resp.Header.Get("Authorization")
 	zap.S().Debugln("authHeader: ", authHeader)
 	if strings.HasPrefix(authHeader, authPrefix) {
-		jwt := authHeader[len(authPrefix):]
-		user.JWT = sql.NullString{String: jwt, Valid: true}
-	} else {
-		user.JWT = sql.NullString{String: "", Valid: false}
+		jwtStr := authHeader[len(authPrefix):]
+		user.Jwt = &jwtStr
 	}
+	zap.S().Infoln(user.Jwt, user.Login, user.Password)
 
-	zap.S().Infoln(user.JWT, user.Login, user.Password)
-	return user, res.StatusCode(), nil
+	return user, resp.StatusCode, nil
 }
