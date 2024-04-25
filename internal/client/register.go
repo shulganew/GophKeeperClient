@@ -14,7 +14,6 @@ import (
 const authPrefix = "Bearer "
 
 func UserReg(ctx context.Context, conf config.Config, login, email, pw string) (user *oapi.User, status int, err error) {
-	user = &oapi.User{Login: login, Email: email, Password: pw}
 	// custom HTTP client
 	hc := http.Client{}
 
@@ -24,8 +23,9 @@ func UserReg(ctx context.Context, conf config.Config, login, email, pw string) (
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	resp, err := c.UserRegGen(ctx, oapi.User{Login: login, Email: email, Password: pw})
+	// Create OAPI user.
+	user = &oapi.User{Login: login, Email: email, Password: pw}
+	resp, err := c.UserRegGen(ctx, *user)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}

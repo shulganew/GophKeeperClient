@@ -23,6 +23,21 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+// Site defines model for Site.
+type Site struct {
+	// Site Site URL
+	Site string `json:"site"`
+
+	// Slogin login for site
+	Slogin string `json:"slogin"`
+
+	// Spw passwor for site
+	Spw string `json:"spw"`
+
+	// Uuid unique site id
+	Uuid *string `json:"uuid,omitempty"`
+}
+
 // User defines model for User.
 type User struct {
 	// Email User email from registration
@@ -43,6 +58,9 @@ type UserLoginGenJSONRequestBody = User
 
 // UserRegGenJSONRequestBody defines body for UserRegGen for application/json ContentType.
 type UserRegGenJSONRequestBody = User
+
+// AddSiteGenJSONRequestBody defines body for AddSiteGen for application/json ContentType.
+type AddSiteGenJSONRequestBody = Site
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -126,6 +144,11 @@ type ClientInterface interface {
 	UserRegGenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UserRegGen(ctx context.Context, body UserRegGenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AddSiteGenWithBody request with any body
+	AddSiteGenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AddSiteGen(ctx context.Context, body AddSiteGenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) UserLoginGenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -166,6 +189,30 @@ func (c *Client) UserRegGenWithBody(ctx context.Context, contentType string, bod
 
 func (c *Client) UserRegGen(ctx context.Context, body UserRegGenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUserRegGenRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddSiteGenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddSiteGenRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddSiteGen(ctx context.Context, body AddSiteGenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddSiteGenRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -256,6 +303,46 @@ func NewUserRegGenRequestWithBody(server string, contentType string, body io.Rea
 	return req, nil
 }
 
+// NewAddSiteGenRequest calls the generic AddSiteGen builder with application/json body
+func NewAddSiteGenRequest(server string, body AddSiteGenJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAddSiteGenRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAddSiteGenRequestWithBody generates requests for AddSiteGen with any type of body
+func NewAddSiteGenRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/user/site/add")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -308,6 +395,11 @@ type ClientWithResponsesInterface interface {
 	UserRegGenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UserRegGenResponse, error)
 
 	UserRegGenWithResponse(ctx context.Context, body UserRegGenJSONRequestBody, reqEditors ...RequestEditorFn) (*UserRegGenResponse, error)
+
+	// AddSiteGenWithBodyWithResponse request with any body
+	AddSiteGenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddSiteGenResponse, error)
+
+	AddSiteGenWithResponse(ctx context.Context, body AddSiteGenJSONRequestBody, reqEditors ...RequestEditorFn) (*AddSiteGenResponse, error)
 }
 
 type UserLoginGenResponse struct {
@@ -354,6 +446,31 @@ func (r UserRegGenResponse) StatusCode() int {
 	return 0
 }
 
+type AddSiteGenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *struct {
+		Uuid string `json:"uuid"`
+	}
+	JSONDefault *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r AddSiteGenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddSiteGenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // UserLoginGenWithBodyWithResponse request with arbitrary body returning *UserLoginGenResponse
 func (c *ClientWithResponses) UserLoginGenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UserLoginGenResponse, error) {
 	rsp, err := c.UserLoginGenWithBody(ctx, contentType, body, reqEditors...)
@@ -386,6 +503,23 @@ func (c *ClientWithResponses) UserRegGenWithResponse(ctx context.Context, body U
 		return nil, err
 	}
 	return ParseUserRegGenResponse(rsp)
+}
+
+// AddSiteGenWithBodyWithResponse request with arbitrary body returning *AddSiteGenResponse
+func (c *ClientWithResponses) AddSiteGenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddSiteGenResponse, error) {
+	rsp, err := c.AddSiteGenWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddSiteGenResponse(rsp)
+}
+
+func (c *ClientWithResponses) AddSiteGenWithResponse(ctx context.Context, body AddSiteGenJSONRequestBody, reqEditors ...RequestEditorFn) (*AddSiteGenResponse, error) {
+	rsp, err := c.AddSiteGen(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddSiteGenResponse(rsp)
 }
 
 // ParseUserLoginGenResponse parses an HTTP response from a UserLoginGenWithResponse call
@@ -428,6 +562,41 @@ func ParseUserRegGenResponse(rsp *http.Response) (*UserRegGenResponse, error) {
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAddSiteGenResponse parses an HTTP response from a AddSiteGenWithResponse call
+func ParseAddSiteGenResponse(rsp *http.Response) (*AddSiteGenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddSiteGenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest struct {
+			Uuid string `json:"uuid"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

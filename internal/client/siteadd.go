@@ -1,45 +1,55 @@
 package client
 
 import (
+	"context"
+	"log"
+	"net/http"
+
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
 	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
+	"go.uber.org/zap"
 )
 
 // Add to Server user's site credentials: login and password.
-func SiteAdd(conf config.Config, user oapi.User, siteURL, slogin, spw string) (status int, err error) {
+// If site created success on the server, it return new UUID of created site object.
+func SiteAdd(conf config.Config, user oapi.User, siteURL, slogin, spw string) (site *oapi.Site, status int, err error) {
 
-	/*
-		// Create JSON requset
-		site := &entities.Site{SiteURL: siteURL, SLogin: slogin, SPw: spw}
-		bodySite := bytes.NewBuffer([]byte{})
-		err = json.NewEncoder(bodySite).Encode(&site)
-		if err != nil {
-			return http.StatusInternalServerError, err
-		}
+	// custom HTTP client
+	hc := http.Client{}
+	// with a raw http.Response
+	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(&hc))
+	if err != nil {
+		log.Fatal(err)
+	}
+	//SetHeader("Authorization", config.AuthPrefix+*user.Jwt).
+	//jwtf := NewExampleAuthProvider(config.AuthPrefix + *user.Jwt)
 
-		// Make requset to server.
-		url := url.URL{Scheme: config.Shema, Host: conf.Address, Path: config.SiteAddPath}
-		zap.S().Debugln("Login URL: ", url)
+	// Create OAPI site object.
+	site = &oapi.Site{Site: siteURL, Slogin: slogin, Spw: spw}
+	resp, err := c.AddSiteGen(context.TODO(), *site, func(ctx context.Context, req *http.Request) error {
+		req.Header.Add("Authorization", config.AuthPrefix+*user.Jwt)
+		return nil
+	})
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
 
-		client := resty.New()
-		res, err := client.R().
-			SetBody(bodySite).
-			SetHeader("Content-Type", "application/json").
-			SetHeader("Authorization", config.AuthPrefix+*user.Jwt).
-			Post(url.String())
-		if err != nil {
-			return http.StatusInternalServerError, err
-		}
+	// Print to log file for debug level.
+	for k, v := range resp.Header {
+		zap.S().Debugf("%s: %v\r\n", k, v[0])
+	}
 
-		// Print to log file for debug level.
-		for k, v := range res.Header() {
-			zap.S().Debugf("%s: %v\r\n", k, v[0])
-		}
+	zap.S().Debugln("Body: ", resp.Body)
+	zap.S().Debugln("Body: ", resp.Body)
+	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
 
-		zap.S().Debugln("Body: ", string(res.Body()))
-		zap.S().Debugf("Status Code: %d\r\n", res.StatusCode)
+	// Get JWT token and save to User
 
-		return res.StatusCode(), nil
-	*/
-	return 0, nil
+	zap.S().Infoln(user.Jwt, user.Login, user.Password)
+	return site, resp.StatusCode, nil
+}
+
+func addJWT(ctx context.Context, req *http.Request) error {
+
+	return nil
 }

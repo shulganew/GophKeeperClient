@@ -12,7 +12,6 @@ import (
 )
 
 func UserLogin(conf config.Config, login, pw string) (user *oapi.User, status int, err error) {
-	user = &oapi.User{Login: login, Password: pw}
 	// custom HTTP client
 	hc := http.Client{}
 	// with a raw http.Response
@@ -20,8 +19,9 @@ func UserLogin(conf config.Config, login, pw string) (user *oapi.User, status in
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	resp, err := c.UserLoginGen(context.Background(), oapi.User{Login: login, Password: pw})
+	// Create OAPI user.
+	user = &oapi.User{Login: login, Password: pw}
+	resp, err := c.UserLoginGen(context.Background(), *user)
 	if err != nil {
 		return nil, http.StatusInternalServerError, err
 	}
