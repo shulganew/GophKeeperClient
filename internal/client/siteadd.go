@@ -49,7 +49,3 @@ func SiteAdd(conf config.Config, user oapi.User, siteURL, slogin, spw string) (s
 	return site, resp.StatusCode, nil
 }
 
-func addJWT(ctx context.Context, req *http.Request) error {
-
-	return nil
-}
