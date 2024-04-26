@@ -19,7 +19,7 @@ type LoginMenu struct {
 }
 
 func NewLoginMenu() LoginMenu {
-	return LoginMenu{Choices: []string{"List logins/pw", "Add NEW", "Give access"}}
+	return LoginMenu{Choices: []string{"List logins/pw", "Add NEW"}}
 }
 
 // Init is the first function that will be called. It returns an optional
@@ -51,13 +51,10 @@ func (lm *LoginMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch lm.Choice {
 			// List logins/pw.
 			case 0:
-				m.ChangeState(tui.LoginMenu, tui.LoginMenu)
+				m.ChangeState(tui.LoginMenu, tui.SiteList)
 			// Add NEW.
 			case 1:
 				m.ChangeState(tui.LoginMenu, tui.SiteAdd)
-			// Give access.
-			case 2:
-				m.ChangeState(tui.LoginMenu, tui.LoginMenu)
 			}
 			return m, nil
 		}

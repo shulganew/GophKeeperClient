@@ -33,4 +33,7 @@ var (
 	OkStyle1   = lipgloss.NewStyle().Foreground(lipgloss.Color("#FDDD00"))
 	OkStyle2   = lipgloss.NewStyle().Foreground(lipgloss.Color("#00A29C"))
 	ErrorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#CE3262"))
+
+	// List of Sites.
+	ListStyle = lipgloss.NewStyle().Margin(1, 2)
 )

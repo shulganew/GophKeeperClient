@@ -56,7 +56,7 @@ func InitModel(conf config.Config) tea.Model {
 		zap.S().Infoln("Saved user not found.")
 		cSate = tui.NotLoginMenu
 	}
-	zap.S().Infoln("Start menu: ", cSate)
+	zap.S().Debugln("Start menu: ", cSate)
 	//
 	// Menu: Init Not Login, state 0.
 	//
@@ -74,7 +74,7 @@ func InitModel(conf config.Config) tea.Model {
 	//
 	lm4 := site.NewLoginMenu()
 	// List site's login and passwords 5
-	ll5 := site.NewListLogin()
+	sl5 := site.NewSiteList()
 	// Add site's login and passwords 6
 	al6 := site.NewAddLogin()
 	// TODO 7-10  temp chops
@@ -85,5 +85,5 @@ func InitModel(conf config.Config) tea.Model {
 	// Add site's login and passwords 11
 	ca11 := ccard.NewCardAdd()
 
-	return tui.Model{Conf: conf, CurrentState: cSate, States: []tui.State{&nl0, &lf1, &rf2, &mm3, &lm4, &ll5, &al6, &stub7, &stub8, &stub9, &stub10, &ca11}, User: user}
+	return tui.Model{Conf: conf, CurrentState: cSate, States: []tui.State{&nl0, &lf1, &rf2, &mm3, &lm4, &sl5, &al6, &stub7, &stub8, &stub9, &stub10, &ca11}, User: user}
 }

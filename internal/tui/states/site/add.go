@@ -104,7 +104,7 @@ func (rf *AddLogin) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
 				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
 				// TODO : save site memory storage.
-				_, status, err := client.SiteAdd(m.Conf, *m.User, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
+				_, status, err := client.SiteAdd(m.Conf, *m.User, m.JWT, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
 				rf.ansver = true
 				rf.ansverCode = status
 				rf.ansverError = err

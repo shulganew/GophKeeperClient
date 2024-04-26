@@ -36,6 +36,7 @@ require (
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/sahilm/fuzzy v0.1.1-0.20230530133925-c48e322e2a8f // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/net v0.22.0 // indirect

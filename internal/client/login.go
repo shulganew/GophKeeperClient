@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func UserLogin(conf config.Config, login, pw string) (user *oapi.User, status int, err error) {
+func UserLogin(conf config.Config, login, pw string) (user *oapi.NewUser, jwt string, status int, err error) {
 	// custom HTTP client
 	hc := http.Client{}
 	// with a raw http.Response
@@ -20,10 +20,10 @@ func UserLogin(conf config.Config, login, pw string) (user *oapi.User, status in
 		log.Fatal(err)
 	}
 	// Create OAPI user.
-	user = &oapi.User{Login: login, Password: pw}
-	resp, err := c.UserLoginGen(context.Background(), *user)
+	user = &oapi.NewUser{Login: login, Password: pw}
+	resp, err := c.Login(context.Background(), *user)
 	if err != nil {
-		return nil, http.StatusInternalServerError, err
+		return nil, "", http.StatusInternalServerError, err
 	}
 
 	// Print to log file for debug level.
@@ -38,9 +38,8 @@ func UserLogin(conf config.Config, login, pw string) (user *oapi.User, status in
 	authHeader := resp.Header.Get("Authorization")
 	zap.S().Debugln("authHeader: ", authHeader)
 	if strings.HasPrefix(authHeader, authPrefix) {
-		jwtStr := authHeader[len(authPrefix):]
-		user.Jwt = &jwtStr
+		jwt = authHeader[len(authPrefix):]
 	}
-	zap.S().Infoln(user.Jwt, user.Login, user.Password)
-	return user, resp.StatusCode, nil
+	zap.S().Infoln(jwt, user.Login, user.Password)
+	return user, jwt, resp.StatusCode, nil
 }

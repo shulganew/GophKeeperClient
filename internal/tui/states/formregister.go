@@ -109,7 +109,7 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
 
 				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
-				user, status, err := client.UserReg(context.Background(), m.Conf, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
+				user, jwt, status, err := client.UserReg(context.Background(), m.Conf, rf.Inputs[0].Value(), rf.Inputs[2].Value(), rf.Inputs[1].Value())
 				rf.ansver = true
 				rf.ansverCode = status
 				rf.ansverError = err
@@ -117,6 +117,8 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 					rf.IsRegOk = true
 					// Save current user to model.
 					m.User = user
+					// Save given token.
+					m.JWT = jwt
 					// Backup curent user.
 					err = backup.SaveUser(*user)
 					if err != nil {

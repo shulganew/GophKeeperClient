@@ -9,7 +9,7 @@ import (
 )
 
 // Backup current User to tmp file.
-func SaveUser(u oapi.User) error {
+func SaveUser(u oapi.NewUser) error {
 	// Save user to file.
 	file, error := os.OpenFile(getBackupPath(), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if error != nil {
@@ -26,12 +26,12 @@ func SaveUser(u oapi.User) error {
 }
 
 // Load backup User from tmp file.
-func LoadUser() (user *oapi.User, err error) {
+func LoadUser() (user *oapi.NewUser, err error) {
 	file, err := os.Open(getBackupPath())
 	if err != nil {
 		return nil, err
 	}
-	u := &oapi.User{}
+	u := &oapi.NewUser{}
 	err = json.NewDecoder(file).Decode(u)
 	if err != nil {
 		return nil, err

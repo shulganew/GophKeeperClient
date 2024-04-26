@@ -7,9 +7,15 @@ package tui
 // implementing a progress bar from scratch here.
 
 import (
+	"errors"
+	"fmt"
+	"net/http"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
+	"github.com/shulganew/GophKeeperClient/internal/client"
 	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
+	"go.uber.org/zap"
 )
 
 type Result struct {
@@ -32,25 +38,22 @@ const MainMenu = 3
 const LoginMenu = 4
 
 // List site's logins and passwords.
-const ListLogin = 5
+const SiteList = 5
 
 // Add site's logins and passwords.
 const SiteAdd = 6
 
-// List site's logins and passwords.
-const SiteList = 7
-
 // Edit site's logins and passwords.
-const SiteEdit = 8
+const SiteEdit = 7
 
 // TODO Gand site's logins and passwords to othes users.
-const SiteGrand = 9
+const SiteGrand = 8
 
 // TODO Rezerved for Igor's ideas.
-const Reserved = 10
+const Reserved = 9
 
 // Add credit card.
-const CcardAdd = 11
+const CcardAdd = 10
 
 // TODO Add text data to system.
 const TextAdd = 15
@@ -67,12 +70,14 @@ type State interface {
 
 type Model struct {
 	Conf          config.Config
-	User          *oapi.User // Store user after login or register.
-	IsUserLogedIn bool       // Quick check users registration.
+	User          *oapi.NewUser // Store user after login or register.
+	JWT           string        // Store user current token.
+	IsUserLogedIn bool          // Quick check users registration.
 	Quitting      bool
 	CurrentState  int
 	PreviousState int
 	States        []State
+	Sites         []oapi.Site
 }
 
 // Init is the first function that will be called. It returns an optional
@@ -96,4 +101,25 @@ func (m Model) View() string {
 func (m *Model) ChangeState(current, next int) {
 	m.CurrentState = next
 	m.PreviousState = current
+
+	// Preloading data to memory model.
+	switch m.CurrentState {
+	case SiteList:
+		sites, status, err := client.SiteList(m.Conf, m.JWT)
+		if err != nil {
+			zap.S().Errorln("Can't loading user's site data: ", err)
+			break
+		}
+		if status != http.StatusOK {
+			zap.S().Errorln(errors.New(fmt.Sprintln("Get wrong status: ", status)))
+			break
+		}
+		m.SetSites(sites)
+		zap.S().Infoln("Set sites from server: ", len(sites))
+	}
+}
+
+// Set size, used for interface conformance save.
+func (m *Model) SetSites(sites []oapi.Site) {
+	m.Sites = sites
 }
