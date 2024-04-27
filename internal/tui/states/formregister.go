@@ -120,7 +120,7 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 					// Save given token.
 					m.JWT = jwt
 					// Backup curent user.
-					err = backup.SaveUser(*user)
+					err = backup.SaveUser(*user, m.JWT)
 					if err != nil {
 						zap.S().Errorln("Can't save user: ", err)
 					}

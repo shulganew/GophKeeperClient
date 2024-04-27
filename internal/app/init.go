@@ -55,7 +55,9 @@ func InitModel(conf config.Config) tea.Model {
 	if err != nil {
 		zap.S().Infoln("Saved user not found.")
 		cSate = tui.NotLoginMenu
+		user = &backup.BackupData{}
 	}
+
 	zap.S().Debugln("Start menu: ", cSate)
 	//
 	// Menu: Init Not Login, state 0.
@@ -85,5 +87,6 @@ func InitModel(conf config.Config) tea.Model {
 	// Add site's login and passwords 11
 	ca11 := ccard.NewCardAdd()
 
-	return tui.Model{Conf: conf, CurrentState: cSate, States: []tui.State{&nl0, &lf1, &rf2, &mm3, &lm4, &sl5, &al6, &stub7, &stub8, &stub9, &stub10, &ca11}, User: user}
+	// TODO make transfer object and Model constructor
+	return tui.Model{Conf: conf, User: &user.NewUser, JWT: user.JWT, CurrentState: cSate, States: []tui.State{&nl0, &lf1, &rf2, &mm3, &lm4, &sl5, &al6, &stub7, &stub8, &stub9, &stub10, &ca11}}
 }
