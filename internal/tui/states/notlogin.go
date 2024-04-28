@@ -18,8 +18,8 @@ type NotLogin struct {
 	Choice  int
 }
 
-func NewNotLogin() NotLogin {
-	return NotLogin{Choices: []string{"Log In", "Sign Up"}}
+func NewNotLogin() *NotLogin {
+	return &NotLogin{Choices: []string{"Log In", "Sign Up"}}
 }
 
 // Init is the first function that will be called. It returns an optional

@@ -18,8 +18,8 @@ type LoginMenu struct {
 	Choice  int
 }
 
-func NewLoginMenu() LoginMenu {
-	return LoginMenu{Choices: []string{"List logins/pw", "Add NEW"}}
+func NewLoginMenu() *LoginMenu {
+	return &LoginMenu{Choices: []string{"List logins/pw", "Add NEW"}}
 }
 
 // Init is the first function that will be called. It returns an optional

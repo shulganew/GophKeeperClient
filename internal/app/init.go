@@ -83,10 +83,10 @@ func InitModel(conf config.Config) tea.Model {
 	stub7 := states.NewMainMenu()
 	stub8 := states.NewMainMenu()
 	stub9 := states.NewMainMenu()
-	stub10 := states.NewMainMenu()
+
 	// Add site's login and passwords 11
-	ca11 := ccard.NewCardAdd()
+	ca10 := ccard.NewCardAdd()
 
 	// TODO make transfer object and Model constructor
-	return tui.Model{Conf: conf, User: &user.NewUser, JWT: user.JWT, CurrentState: cSate, States: []tui.State{&nl0, &lf1, &rf2, &mm3, &lm4, &sl5, &al6, &stub7, &stub8, &stub9, &stub10, &ca11}}
+	return tui.Model{Conf: conf, User: &user.NewUser, JWT: user.JWT, CurrentState: cSate, States: []tui.State{nl0, lf1, rf2, mm3, lm4, sl5, al6, stub7, stub8, stub9, &ca10}}
 }

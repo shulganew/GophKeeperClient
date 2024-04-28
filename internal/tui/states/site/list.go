@@ -32,7 +32,7 @@ type SiteList struct {
 
 // SiteList, state 7
 // List saved site credentials.
-func NewSiteList() SiteList {
+func NewSiteList() *SiteList {
 	// Create empty list items
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	l.Title = "Sites login and passowrds."
@@ -41,7 +41,7 @@ func NewSiteList() SiteList {
 	tw, th, _ := term.GetSize(int(os.Stdout.Fd()))
 	h, v := styles.ListStyle.GetFrameSize()
 	sl.list.SetSize(tw-h, th-v)
-	return sl
+	return &sl
 }
 
 // Init is the first function that wisl be casled. It returns an optional

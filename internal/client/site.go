@@ -13,7 +13,7 @@ import (
 
 // Add to Server user's site credentials: login and password.
 // If site created success on the server, it return new UUID of created site object.
-func SiteAdd(conf config.Config, user oapi.NewUser, jwt, siteURL, slogin, spw string) (site *oapi.NewSite, status int, err error) {
+func SiteAdd(conf config.Config, user oapi.NewUser, jwt, def, siteURL, slogin, spw string) (site *oapi.NewSite, status int, err error) {
 
 	// custom HTTP client
 	hc := http.Client{}
@@ -24,7 +24,7 @@ func SiteAdd(conf config.Config, user oapi.NewUser, jwt, siteURL, slogin, spw st
 	}
 
 	// Create OAPI site object.
-	site = &oapi.NewSite{Site: siteURL, Slogin: slogin, Spw: spw}
+	site = &oapi.NewSite{Definition: def, Site: siteURL, Slogin: slogin, Spw: spw}
 	resp, err := c.AddSite(context.TODO(), *site, func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)
 		return nil

@@ -16,7 +16,7 @@ import (
 // Implemet State.
 var _ tui.State = (*AddLogin)(nil)
 
-const InputsSitesLogin = 3
+const InputsSitesLogin = 4
 
 // AddLogin, state 2
 // Inputs: login, email, pw, pw (check corret input)
@@ -29,7 +29,7 @@ type AddLogin struct {
 	ansverError error // Servier answer error.
 }
 
-func NewAddLogin() AddLogin {
+func NewAddLogin() *AddLogin {
 	rf := AddLogin{
 		Inputs: make([]textinput.Model, InputsSitesLogin),
 	}
@@ -42,17 +42,22 @@ func NewAddLogin() AddLogin {
 
 		switch i {
 		case 0:
-			t.Placeholder = "https://mysite.ru"
+			t.Placeholder = "Description"
 			t.Focus()
 			t.PromptStyle = styles.FocusedStyle
 			t.TextStyle = styles.FocusedStyle
-			t.SetValue("https://mysite.ru")
+			t.SetValue("My bank site")
 		case 1:
+			t.Placeholder = "https://mysite.ru"
+			t.PromptStyle = styles.NoStyle
+			t.TextStyle = styles.NoStyle
+			t.SetValue("https://mysite.ru")
+		case 2:
 			t.Placeholder = "login"
 			t.PromptStyle = styles.NoStyle
 			t.TextStyle = styles.NoStyle
 			t.SetValue("scaevol@yandex.ru")
-		case 2:
+		case 3:
 			t.Placeholder = "Password"
 			t.EchoMode = textinput.EchoPassword
 			t.EchoCharacter = '•'
@@ -60,7 +65,7 @@ func NewAddLogin() AddLogin {
 		}
 		rf.Inputs[i] = t
 	}
-	return rf
+	return &rf
 }
 
 // Init is the first function that will be called. It returns an optional
@@ -102,9 +107,9 @@ func (rf *AddLogin) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			// Submit button pressed!
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
-				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
+				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value(), rf.Inputs[3].Value())
 				// TODO : save site memory storage.
-				_, status, err := client.SiteAdd(m.Conf, *m.User, m.JWT, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
+				_, status, err := client.SiteAdd(m.Conf, *m.User, m.JWT, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value(), rf.Inputs[3].Value())
 				rf.ansver = true
 				rf.ansverCode = status
 				rf.ansverError = err

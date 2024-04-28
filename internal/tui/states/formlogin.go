@@ -29,7 +29,7 @@ type LoginForm struct {
 	ansverError error // Servier answer error.
 }
 
-func NewLoginForm() LoginForm {
+func NewLoginForm() *LoginForm {
 	lf := LoginForm{
 		inputs: make([]textinput.Model, inputsLogin),
 	}
@@ -55,7 +55,7 @@ func NewLoginForm() LoginForm {
 		}
 		lf.inputs[i] = t
 	}
-	return lf
+	return &lf
 }
 
 // Init is the first function that will be called. It returns an optional

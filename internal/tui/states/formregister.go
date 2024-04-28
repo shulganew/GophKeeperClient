@@ -31,7 +31,7 @@ type RegisterForm struct {
 	ansverError error // Servier answer error.
 }
 
-func NewRegisterForm() RegisterForm {
+func NewRegisterForm() *RegisterForm {
 	rf := RegisterForm{
 		Inputs: make([]textinput.Model, InputsRegister),
 	}
@@ -64,7 +64,7 @@ func NewRegisterForm() RegisterForm {
 		rf.Inputs[i] = t
 	}
 
-	return rf
+	return &rf
 }
 
 // Init is the first function that will be called. It returns an optional

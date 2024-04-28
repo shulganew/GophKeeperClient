@@ -19,8 +19,8 @@ type MainMenu struct {
 	Choice  int
 }
 
-func NewMainMenu() MainMenu {
-	return MainMenu{Choices: []string{"Sites logins/pw", "Credit cards", "Secret text", "Sectret bin data", "Help", "Logout"}}
+func NewMainMenu() *MainMenu {
+	return &MainMenu{Choices: []string{"Sites logins/pw", "Credit cards", "Secret text", "Sectret bin data", "Help", "Logout"}}
 }
 
 // Init is the first function that will be called. It returns an optional
