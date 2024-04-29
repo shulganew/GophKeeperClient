@@ -80,10 +80,10 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 		case "ctrl+c", "esc":
 			rf.cleanform()
 			if m.IsUserLogedIn {
-				m.ChangeState(tui.SignUpForm, tui.MainMenu)
+				m.ChangeState(tui.RegisterForm, tui.MainMenu)
 				return m, nil
 			}
-			m.ChangeState(tui.SignUpForm, tui.NotLoginMenu)
+			m.ChangeState(tui.RegisterForm, tui.NotLoginMenu)
 			return m, nil
 		case "insert":
 			// Hide or show password.
@@ -102,7 +102,7 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 			// If user registration done, enter for continue...
 			if rf.IsRegOk {
 				rf.cleanform()
-				m.ChangeState(tui.SignUpForm, tui.MainMenu)
+				m.ChangeState(tui.RegisterForm, tui.MainMenu)
 				return m, nil
 			}
 			// Submit button pressed!
@@ -205,7 +205,9 @@ func (rf *RegisterForm) GetView(m *tui.Model) string {
 	b.WriteString("\n\n")
 	b.WriteString(styles.HelpStyle.Render("<Insert> - show or hide password, <Esc> - back to menu."))
 
-	return b.String()
+	str := b.String()
+	b.Reset()
+	return str
 }
 
 // Help functions

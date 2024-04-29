@@ -36,4 +36,7 @@ var (
 
 	// List of Sites.
 	ListStyle = lipgloss.NewStyle().Margin(1, 2)
+
+	// Cards
+	CardAdd = lipgloss.NewStyle().Foreground(lipgloss.Color("#5DC9E2"))
 )

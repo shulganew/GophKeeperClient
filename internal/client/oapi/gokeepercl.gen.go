@@ -14,6 +14,27 @@ import (
 	"strings"
 )
 
+// Card defines model for Card.
+type Card struct {
+	// CardID id card data
+	CardID string `json:"cardID"`
+
+	// Ccn credit card number
+	Ccn string `json:"ccn"`
+
+	// Cvv card verification value
+	Cvv string `json:"cvv"`
+
+	// Definition Common sectert description
+	Definition string `json:"definition"`
+
+	// Exp expire
+	Exp string `json:"exp"`
+
+	// Hld holder
+	Hld string `json:"hld"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	// Code Error code
@@ -21,6 +42,24 @@ type Error struct {
 
 	// Message Error message
 	Message string `json:"message"`
+}
+
+// NewCard defines model for NewCard.
+type NewCard struct {
+	// Ccn credit card number
+	Ccn string `json:"ccn"`
+
+	// Cvv card verification value
+	Cvv string `json:"cvv"`
+
+	// Definition Common sectert description
+	Definition string `json:"definition"`
+
+	// Exp expire
+	Exp string `json:"exp"`
+
+	// Hld holder
+	Hld string `json:"hld"`
 }
 
 // NewSite defines model for NewSite.
@@ -73,6 +112,9 @@ type LoginJSONRequestBody = NewUser
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = NewUser
+
+// AddCardJSONRequestBody defines body for AddCard for application/json ContentType.
+type AddCardJSONRequestBody = NewCard
 
 // AddSiteJSONRequestBody defines body for AddSite for application/json ContentType.
 type AddSiteJSONRequestBody = NewSite
@@ -160,13 +202,21 @@ type ClientInterface interface {
 
 	CreateUser(ctx context.Context, body CreateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// AddCardWithBody request with any body
+	AddCardWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AddCard(ctx context.Context, body AddCardJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListCards request
+	ListCards(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// AddSiteWithBody request with any body
 	AddSiteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	AddSite(ctx context.Context, body AddSiteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListSite request
-	ListSite(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListSites request
+	ListSites(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) LoginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -217,6 +267,42 @@ func (c *Client) CreateUser(ctx context.Context, body CreateUserJSONRequestBody,
 	return c.Client.Do(req)
 }
 
+func (c *Client) AddCardWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddCardRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddCard(ctx context.Context, body AddCardJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddCardRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListCards(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCardsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) AddSiteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAddSiteRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -241,8 +327,8 @@ func (c *Client) AddSite(ctx context.Context, body AddSiteJSONRequestBody, reqEd
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListSite(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSiteRequest(c.Server)
+func (c *Client) ListSites(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSitesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -333,6 +419,73 @@ func NewCreateUserRequestWithBody(server string, contentType string, body io.Rea
 	return req, nil
 }
 
+// NewAddCardRequest calls the generic AddCard builder with application/json body
+func NewAddCardRequest(server string, body AddCardJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAddCardRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAddCardRequestWithBody generates requests for AddCard with any type of body
+func NewAddCardRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/user/card/add")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListCardsRequest generates requests for ListCards
+func NewListCardsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/user/card/list")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewAddSiteRequest calls the generic AddSite builder with application/json body
 func NewAddSiteRequest(server string, body AddSiteJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -373,8 +526,8 @@ func NewAddSiteRequestWithBody(server string, contentType string, body io.Reader
 	return req, nil
 }
 
-// NewListSiteRequest generates requests for ListSite
-func NewListSiteRequest(server string) (*http.Request, error) {
+// NewListSitesRequest generates requests for ListSites
+func NewListSitesRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -453,13 +606,21 @@ type ClientWithResponsesInterface interface {
 
 	CreateUserWithResponse(ctx context.Context, body CreateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUserResponse, error)
 
+	// AddCardWithBodyWithResponse request with any body
+	AddCardWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddCardResponse, error)
+
+	AddCardWithResponse(ctx context.Context, body AddCardJSONRequestBody, reqEditors ...RequestEditorFn) (*AddCardResponse, error)
+
+	// ListCardsWithResponse request
+	ListCardsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCardsResponse, error)
+
 	// AddSiteWithBodyWithResponse request with any body
 	AddSiteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddSiteResponse, error)
 
 	AddSiteWithResponse(ctx context.Context, body AddSiteJSONRequestBody, reqEditors ...RequestEditorFn) (*AddSiteResponse, error)
 
-	// ListSiteWithResponse request
-	ListSiteWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSiteResponse, error)
+	// ListSitesWithResponse request
+	ListSitesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSitesResponse, error)
 }
 
 type LoginResponse struct {
@@ -506,6 +667,52 @@ func (r CreateUserResponse) StatusCode() int {
 	return 0
 }
 
+type AddCardResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *[]Card
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r AddCardResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddCardResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListCardsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]Card
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r ListCardsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListCardsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type AddSiteResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -529,7 +736,7 @@ func (r AddSiteResponse) StatusCode() int {
 	return 0
 }
 
-type ListSiteResponse struct {
+type ListSitesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *[]Site
@@ -537,7 +744,7 @@ type ListSiteResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r ListSiteResponse) Status() string {
+func (r ListSitesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -545,7 +752,7 @@ func (r ListSiteResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListSiteResponse) StatusCode() int {
+func (r ListSitesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -586,6 +793,32 @@ func (c *ClientWithResponses) CreateUserWithResponse(ctx context.Context, body C
 	return ParseCreateUserResponse(rsp)
 }
 
+// AddCardWithBodyWithResponse request with arbitrary body returning *AddCardResponse
+func (c *ClientWithResponses) AddCardWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddCardResponse, error) {
+	rsp, err := c.AddCardWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddCardResponse(rsp)
+}
+
+func (c *ClientWithResponses) AddCardWithResponse(ctx context.Context, body AddCardJSONRequestBody, reqEditors ...RequestEditorFn) (*AddCardResponse, error) {
+	rsp, err := c.AddCard(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddCardResponse(rsp)
+}
+
+// ListCardsWithResponse request returning *ListCardsResponse
+func (c *ClientWithResponses) ListCardsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCardsResponse, error) {
+	rsp, err := c.ListCards(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListCardsResponse(rsp)
+}
+
 // AddSiteWithBodyWithResponse request with arbitrary body returning *AddSiteResponse
 func (c *ClientWithResponses) AddSiteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddSiteResponse, error) {
 	rsp, err := c.AddSiteWithBody(ctx, contentType, body, reqEditors...)
@@ -603,13 +836,13 @@ func (c *ClientWithResponses) AddSiteWithResponse(ctx context.Context, body AddS
 	return ParseAddSiteResponse(rsp)
 }
 
-// ListSiteWithResponse request returning *ListSiteResponse
-func (c *ClientWithResponses) ListSiteWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSiteResponse, error) {
-	rsp, err := c.ListSite(ctx, reqEditors...)
+// ListSitesWithResponse request returning *ListSitesResponse
+func (c *ClientWithResponses) ListSitesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSitesResponse, error) {
+	rsp, err := c.ListSites(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListSiteResponse(rsp)
+	return ParseListSitesResponse(rsp)
 }
 
 // ParseLoginResponse parses an HTTP response from a LoginWithResponse call
@@ -664,6 +897,72 @@ func ParseCreateUserResponse(rsp *http.Response) (*CreateUserResponse, error) {
 	return response, nil
 }
 
+// ParseAddCardResponse parses an HTTP response from a AddCardWithResponse call
+func ParseAddCardResponse(rsp *http.Response) (*AddCardResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddCardResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest []Card
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListCardsResponse parses an HTTP response from a ListCardsWithResponse call
+func ParseListCardsResponse(rsp *http.Response) (*ListCardsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListCardsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []Card
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseAddSiteResponse parses an HTTP response from a AddSiteWithResponse call
 func ParseAddSiteResponse(rsp *http.Response) (*AddSiteResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -697,15 +996,15 @@ func ParseAddSiteResponse(rsp *http.Response) (*AddSiteResponse, error) {
 	return response, nil
 }
 
-// ParseListSiteResponse parses an HTTP response from a ListSiteWithResponse call
-func ParseListSiteResponse(rsp *http.Response) (*ListSiteResponse, error) {
+// ParseListSitesResponse parses an HTTP response from a ListSitesWithResponse call
+func ParseListSitesResponse(rsp *http.Response) (*ListSitesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListSiteResponse{
+	response := &ListSitesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

@@ -29,7 +29,7 @@ type AddLogin struct {
 	ansverError error // Servier answer error.
 }
 
-func NewAddLogin() *AddLogin {
+func NewSiteAdd() *AddLogin {
 	rf := AddLogin{
 		Inputs: make([]textinput.Model, InputsSitesLogin),
 	}
@@ -109,7 +109,7 @@ func (rf *AddLogin) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
 				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value(), rf.Inputs[3].Value())
 				// TODO : save site memory storage.
-				_, status, err := client.SiteAdd(m.Conf, *m.User, m.JWT, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value(), rf.Inputs[3].Value())
+				_, status, err := client.SiteAdd(m.Conf, m.JWT, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value(), rf.Inputs[3].Value())
 				rf.ansver = true
 				rf.ansverCode = status
 				rf.ansverError = err
@@ -118,7 +118,6 @@ func (rf *AddLogin) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 				zap.S().Infof("Text inputs %d | %w", status, err)
-
 				return m, nil
 			}
 
@@ -197,7 +196,9 @@ func (rf *AddLogin) GetView(m *tui.Model) string {
 	b.WriteString("\n\n")
 	b.WriteString(styles.HelpStyle.Render("<Insert> - show or hide password, <Esc> - back to menu."))
 
-	return b.String()
+	str := b.String()
+	b.Reset()
+	return str
 }
 
 // Help functions

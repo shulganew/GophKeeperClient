@@ -1,6 +1,8 @@
-package site
+package card
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -10,51 +12,51 @@ import (
 )
 
 // Implemet State.
-var _ tui.State = (*LoginMenu)(nil)
+var _ tui.State = (*CardMenu)(nil)
 
 // Main site's login and password administration, state 4
-type LoginMenu struct {
+type CardMenu struct {
 	Choices []string
 	Choice  int
 }
 
-func NewSietMenu() *LoginMenu {
-	return &LoginMenu{Choices: []string{"List logins/pw", "Add NEW"}}
+func NewCardMenu() *CardMenu {
+	return &CardMenu{Choices: []string{"Add NEW card", "List cards"}}
 }
 
 // Init is the first function that will be called. It returns an optional
 // initial colmand. To not perform an initial colmand return nil.
-func (lm *LoginMenu) GetInit() tea.Cmd {
+func (cm *CardMenu) GetInit() tea.Cmd {
 	return nil
 }
 
 // Main update function.
-func (lm *LoginMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func (cm *CardMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
-			m.ChangeState(tui.SiteMenu, tui.MainMenu)
+			m.ChangeState(tui.CardMenu, tui.MainMenu)
 		case "down":
-			lm.Choice++
-			if lm.Choice > len(lm.Choices)-1 {
-				lm.Choice = 0
+			cm.Choice++
+			if cm.Choice > len(cm.Choices)-1 {
+				cm.Choice = 0
 			}
 			return m, nil
 		case "up":
-			lm.Choice--
-			if lm.Choice < 0 {
-				lm.Choice = len(lm.Choices) - 1
+			cm.Choice--
+			if cm.Choice < 0 {
+				cm.Choice = len(cm.Choices) - 1
 			}
 			return m, nil
 		case "enter":
-			switch lm.Choice {
+			switch cm.Choice {
 			// List logins/pw.
 			case 0:
-				m.ChangeState(tui.SiteMenu, tui.SiteList)
+				m.ChangeState(tui.CardMenu, tui.CardAdd)
 			// Add NEW.
 			case 1:
-				m.ChangeState(tui.SiteMenu, tui.SiteAdd)
+				m.ChangeState(tui.CardMenu, tui.CardList)
 			}
 			return m, nil
 		}
@@ -63,11 +65,11 @@ func (lm *LoginMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // The main view, which just calls the appropriate sub-view
-func (lm *LoginMenu) GetView(m *tui.Model) string {
+func (cm *CardMenu) GetView(m *tui.Model) string {
 	s := strings.Builder{}
-	s.WriteString(states.GetHeaderView())
+	s.WriteString(styles.GopherHeader.Render(fmt.Sprintf("GopherKeeper client, build version: 1.0.0, pid %d \n\n", os.Getpid())))
 
-	s.WriteString(lm.choicesRegister(m))
+	s.WriteString(cm.choicesRegister(m))
 
 	s.WriteString(states.GetHelpView())
 	return s.String()
@@ -76,16 +78,14 @@ func (lm *LoginMenu) GetView(m *tui.Model) string {
 // Method for working with views/
 //
 // Choosing menu.
-func (lm *LoginMenu) choicesRegister(m *tui.Model) string {
+func (cm *CardMenu) choicesRegister(m *tui.Model) string {
 	s := strings.Builder{}
 	s.WriteString("\n")
-	s.WriteString(styles.GopherQuestion.Render(m.User.Login, ", yours site's logins and passw:"))
+	s.WriteString(styles.GopherQuestion.Render(m.User.Login, ", yours debet cards here:"))
 	s.WriteString("\n\n")
-	for i := 0; i < len(lm.Choices); i++ {
-		s.WriteString(states.Checkbox(lm.Choices[i], lm.Choice == i))
+	for i := 0; i < len(cm.Choices); i++ {
+		s.WriteString(states.Checkbox(cm.Choices[i], cm.Choice == i))
 		s.WriteString("\n")
 	}
-	str := s.String()
-	s.Reset()
-	return str
+	return s.String()
 }

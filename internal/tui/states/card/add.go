@@ -1,7 +1,6 @@
-package ccard
+package card
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/shulganew/GophKeeperClient/internal/client"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/styles"
 	"go.uber.org/zap"
@@ -36,21 +36,30 @@ type (
 )
 
 const (
-	ccn = iota
+	def = iota
+	ccn
 	exp
 	cvv
 	hld
 )
 
-func NewCardAdd() CardAdd {
-	var inputs []textinput.Model = make([]textinput.Model, 4)
+func NewCardAdd() *CardAdd {
+	var inputs []textinput.Model = make([]textinput.Model, 5)
+	inputs[def] = textinput.New()
+	inputs[def].Placeholder = "My bank"
+	inputs[def].Focus()
+	inputs[def].CharLimit = 40
+	inputs[def].Width = 30
+	inputs[def].Prompt = ""
+	inputs[def].SetValue("My bank")
+
 	inputs[ccn] = textinput.New()
 	inputs[ccn].Placeholder = "4505 **** **** 1234"
-	inputs[ccn].Focus()
 	inputs[ccn].CharLimit = 20
 	inputs[ccn].Width = 30
 	inputs[ccn].Prompt = ""
 	inputs[ccn].Validate = ccnValidator
+	inputs[ccn].SetValue("1111 2222 2222 2222")
 
 	inputs[exp] = textinput.New()
 	inputs[exp].Placeholder = "MM/YY "
@@ -58,6 +67,7 @@ func NewCardAdd() CardAdd {
 	inputs[exp].Width = 5
 	inputs[exp].Prompt = ""
 	inputs[exp].Validate = expValidator
+	inputs[exp].SetValue("11/25")
 
 	inputs[cvv] = textinput.New()
 	inputs[cvv].Placeholder = "XXX"
@@ -65,15 +75,16 @@ func NewCardAdd() CardAdd {
 	inputs[cvv].Width = 5
 	inputs[cvv].Prompt = ""
 	inputs[cvv].Validate = cvvValidator
+	inputs[cvv].SetValue("425")
 
 	inputs[hld] = textinput.New()
 	inputs[hld].Placeholder = "Card Holder"
 	inputs[hld].CharLimit = 30
 	inputs[hld].Width = 30
 	inputs[hld].Prompt = ""
+	inputs[hld].SetValue("Mariya")
 
-
-	return CardAdd{
+	return &CardAdd{
 		inputs:  inputs,
 		focused: 0,
 		cardErr: nil,
@@ -96,14 +107,18 @@ func (ca *CardAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type.String() {
 		case "ctrl+c", "esc":
 			ca.cleanform()
-			m.ChangeState(tui.CcardAdd, tui.MainMenu)
+			m.ChangeState(tui.CardAdd, tui.CardMenu)
 			return m, nil
 		case "enter":
+			// If user adding done success, enter for continue...
+			if ca.IsAddOk {
+				ca.cleanform()
+				m.ChangeState(tui.CardAdd, tui.CardMenu)
+				return m, nil
+			}
 			if ca.focused == len(ca.inputs)-1 {
-				zap.S().Infof("Text inputs %s  %s", ca.inputs[0].Value(), ca.inputs[1].Value(), ca.inputs[2].Value(), ca.inputs[3].Value())
-				//status, err := client.SiteAdd(m.Conf, *m.User, ca.inputs[0].Value(), ca.inputs[1].Value(), ca.inputs[2].Value())
-				status := http.StatusInternalServerError
-				err := errors.New("test error")
+				zap.S().Infof("Text inputs %s  %s", ca.inputs[0].Value(), ca.inputs[1].Value(), ca.inputs[2].Value(), ca.inputs[3].Value(), ca.inputs[4].Value())
+				_, status, err := client.CardAdd(m.Conf, m.JWT, ca.inputs[0].Value(), ca.inputs[1].Value(), ca.inputs[2].Value(), ca.inputs[3].Value(), ca.inputs[4].Value())
 				ca.ansver = true
 				ca.ansverCode = status
 				ca.ansverError = err
@@ -141,9 +156,12 @@ func (ca *CardAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // The main view, which just calls the appropriate sub-view
 func (ca *CardAdd) GetView(m *tui.Model) string {
-	var b strings.Builder
+	b := strings.Builder{}
 	b.WriteString(fmt.Sprintf(
 		`
+ %s
+ %s
+
  %s
  %s
 
@@ -155,13 +173,15 @@ func (ca *CardAdd) GetView(m *tui.Model) string {
 
  %s
 `,
-		styles.GopherQuestion.Width(30).Render("Card Number"),
+		styles.CardAdd.Width(30).Render("Card Number"),
+		ca.inputs[def].View(),
+		styles.CardAdd.Width(30).Render("Card Number"),
 		ca.inputs[ccn].View(),
-		styles.GopherQuestion.Width(6).Render("EXP"),
-		styles.GopherQuestion.Width(6).Render("CVV"),
+		styles.CardAdd.Width(6).Render("EXP"),
+		styles.CardAdd.Width(6).Render("CVV"),
 		ca.inputs[exp].View(),
 		ca.inputs[cvv].View(),
-		styles.GopherQuestion.Width(14).Render("First and Last Name"),
+		styles.CardAdd.Width(14).Render("First and Last Name"),
 		ca.inputs[hld].View(),
 		styles.GopherHeader.Render("Continue ->"),
 	) + "\n")
@@ -171,7 +191,7 @@ func (ca *CardAdd) GetView(m *tui.Model) string {
 		if ca.ansverCode == http.StatusCreated {
 			b.WriteString(styles.OkStyle1.Render("Debit card add successful: ", m.User.Login))
 			b.WriteString("\n\n")
-			b.WriteString(styles.GopherQuestion.Render("Press <Enter> to continue... "))
+			b.WriteString(styles.CardAdd.Render("Press <Enter> to continue... "))
 			b.WriteString("\n\n")
 		} else {
 			b.WriteString(styles.ErrorStyle.Render("Server ansver with code: ", fmt.Sprint(ca.ansverCode)))
@@ -185,8 +205,9 @@ func (ca *CardAdd) GetView(m *tui.Model) string {
 
 	b.WriteString("\n\n")
 	b.WriteString(styles.HelpStyle.Render("<tab> - next input, <shift+tab> - previous, <Esc> - back to menu."))
-
-	return b.String()
+	str := b.String()
+	b.Reset()
+	return str
 }
 
 // Reset all inputs and form errors.

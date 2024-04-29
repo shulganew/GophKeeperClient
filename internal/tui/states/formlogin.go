@@ -189,7 +189,9 @@ func (lf *LoginForm) GetView(m *tui.Model) string {
 	b.WriteString("\n\n")
 	b.WriteString(styles.HelpStyle.Render("<Esc> - back to menu."))
 
-	return b.String()
+	str := b.String()
+	b.Reset()
+	return str
 }
 
 // Help functions.

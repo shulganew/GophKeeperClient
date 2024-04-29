@@ -29,13 +29,13 @@ const NotLoginMenu = 0
 const LoginForm = 1
 
 // User registration form.
-const SignUpForm = 2
+const RegisterForm = 2
 
 // Mani menu for loged in users.
 const MainMenu = 3
 
 // Menu for site's logins and passwords.
-const LoginMenu = 4
+const SiteMenu = 4
 
 // List site's logins and passwords.
 const SiteList = 5
@@ -43,23 +43,38 @@ const SiteList = 5
 // Add site's logins and passwords.
 const SiteAdd = 6
 
-// Edit site's logins and passwords.
-const SiteEdit = 7
+// TODO
+const SiteUpdate = 7
 
-// TODO Gand site's logins and passwords to othes users.
-const SiteGrand = 8
-
-// TODO Rezerved for Igor's ideas.
-const Reserved = 9
+// Card menu.
+const CardMenu = 8
 
 // Add credit card.
-const CcardAdd = 10
+const CardAdd = 9
 
-// TODO Add text data to system.
-const TextAdd = 15
+// List credit card.
+const CardList = 10
 
-// TODO Add binary data to system.
-const TextBin = 21
+// List credit card. //TODO
+const CardUpdate = 11
+
+// Goph text menu.
+const GtextMenu = 12
+
+// Add credit card.
+const GtextAdd = 13
+
+// List credit card.
+const GtextList = 14
+
+// Goph file menu.
+const GfileMenu = 15
+
+// Add credit card.
+const GfileAdd = 16
+
+// List credit card.
+const GfileList = 17
 
 // Interface for all states selection.
 type State interface {
@@ -77,7 +92,8 @@ type Model struct {
 	CurrentState  int
 	PreviousState int
 	States        []State
-	Sites         []oapi.Site
+	Sites         []oapi.Site // Memory storage of Site data.
+	Cards         []oapi.Card // Memory storage of Cards data.
 }
 
 // Init is the first function that will be called. It returns an optional
@@ -116,10 +132,29 @@ func (m *Model) ChangeState(current, next int) {
 		}
 		m.SetSites(sites)
 		zap.S().Infoln("Set sites from server: ", len(sites))
+	case CardList:
+		cards, status, err := client.CardsList(m.Conf, m.JWT)
+		if err != nil {
+			zap.S().Errorln("Can't loading user's cards data: ", err)
+			break
+		}
+		if status != http.StatusOK {
+			zap.S().Errorln(errors.New(fmt.Sprintln("Get wrong status: ", status)))
+			break
+		}
+		m.SetCards(cards)
+		zap.S().Infoln("Set sites from server: ", len(cards))
 	}
+	
+
 }
 
 // Set size, used for interface conformance save.
 func (m *Model) SetSites(sites []oapi.Site) {
 	m.Sites = sites
+}
+
+// Set size, used for interface conformance save.
+func (m *Model) SetCards(cards []oapi.Card) {
+	m.Cards = cards
 }

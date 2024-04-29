@@ -51,11 +51,11 @@ func (mm *MainMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch mm.Choice {
 			// Site's login and passes.
 			case 0:
-				m.ChangeState(tui.MainMenu, tui.LoginMenu)
+				m.ChangeState(tui.MainMenu, tui.SiteMenu)
 				return m, nil
 				// Credit cards.
 			case 1:
-				m.ChangeState(tui.MainMenu, tui.CcardAdd)
+				m.ChangeState(tui.MainMenu, tui.CardMenu)
 				return m, nil
 
 			case 5:
@@ -90,17 +90,19 @@ func (mm *MainMenu) GetView(m *tui.Model) string {
 //
 // Choosing menu.
 func (mm *MainMenu) choicesRegister(m *tui.Model) string {
-	s := strings.Builder{}
-	s.WriteString("\n")
-	s.WriteString(styles.GopherQuestion.Render("Hello, ", m.User.Login, ", choose your secters:"))
-	s.WriteString("\n\n")
+	b := strings.Builder{}
+	b.WriteString("\n")
+	b.WriteString(styles.GopherQuestion.Render("Hello, ", m.User.Login, ", choose your secters:"))
+	b.WriteString("\n\n")
 	for i := 0; i < len(mm.Choices); i++ {
-		s.WriteString(Checkbox(mm.Choices[i], mm.Choice == i))
-		s.WriteString("\n")
+		b.WriteString(Checkbox(mm.Choices[i], mm.Choice == i))
+		b.WriteString("\n")
 		// Add Help and logout Separator
 		if len(mm.Choices)-3 == i {
-			s.WriteString("\n")
+			b.WriteString("\n")
 		}
 	}
-	return s.String()
+	str := b.String()
+	b.Reset()
+	return str
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states"
-	"github.com/shulganew/GophKeeperClient/internal/tui/states/ccard"
+	"github.com/shulganew/GophKeeperClient/internal/tui/states/card"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states/site"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -74,19 +74,20 @@ func InitModel(conf config.Config) tea.Model {
 	//
 	// Menu: Save site's login and passwords. 4
 	//
-	lm4 := site.NewLoginMenu()
+	lm4 := site.NewSietMenu()
 	// List site's login and passwords 5
 	sl5 := site.NewSiteList()
 	// Add site's login and passwords 6
-	al6 := site.NewAddLogin()
-	// TODO 7-10  temp chops
-	stub7 := states.NewMainMenu()
-	stub8 := states.NewMainMenu()
-	stub9 := states.NewMainMenu()
+	al6 := site.NewSiteAdd()
 
-	// Add site's login and passwords 11
-	ca10 := ccard.NewCardAdd()
+	siteU7 := states.NewMainMenu() // Site edit reserved
+	// Card menu
+	cm8 := card.NewCardMenu()
+	ca9 := card.NewCardAdd()
+	cl10 := card.NewCardList()
+	// List cards
+	//ca10 := card.NewCardAdd()
 
 	// TODO make transfer object and Model constructor
-	return tui.Model{Conf: conf, User: &user.NewUser, JWT: user.JWT, CurrentState: cSate, States: []tui.State{nl0, lf1, rf2, mm3, lm4, sl5, al6, stub7, stub8, stub9, &ca10}}
+	return tui.Model{Conf: conf, User: &user.NewUser, JWT: user.JWT, CurrentState: cSate, States: []tui.State{nl0, lf1, rf2, mm3, lm4, sl5, al6, siteU7, cm8, ca9, cl10}}
 }
