@@ -1,8 +1,10 @@
-package site
+package gtext
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,48 +16,47 @@ import (
 )
 
 // Implemet State.
-var _ tui.State = (*SiteList)(nil)
+var _ tui.State = (*GtextList)(nil)
 
-type Site oapi.Site
+type Gtext oapi.Gtext
 
-func (s Site) Title() string {
-	return fmt.Sprintf("%s ◉ %s", s.Definition, s.Site)
+func (g Gtext) Title() string {
+	return fmt.Sprint(g.Definition)
 }
-func (s Site) Description() string {
-	return fmt.Sprintf("%s ◉ %s", s.Slogin, s.Spw)
+func (g Gtext) Description() string {
+	return fmt.Sprint(g.Note)
 }
-func (s Site) FilterValue() string { return s.Site }
+func (g Gtext) FilterValue() string { return g.Definition }
 
-type SiteList struct {
+type GtextList struct {
 	list list.Model
 }
 
-// SiteList, state 7
-// List saved site credentials.
-func NewSiteList() *SiteList {
+// List saved gtext credentials.
+func NewGtextList() *GtextList {
 	// Create empty list items
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
-	l.Title = "Sites login and passowrds."
-	sl := SiteList{list: l}
+	l.Title = "My secret notes."
+	cl := GtextList{list: l}
 	// Fix terminal bag.
 	tw, th, _ := term.GetSize(int(os.Stdout.Fd()))
 	h, v := styles.ListStyle.GetFrameSize()
-	sl.list.SetSize(tw-h, th-v)
-	return &sl
+	cl.list.SetSize(tw-h, th-v)
+	return &cl
 }
 
 // Init is the first function that wisl be casled. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (sl *SiteList) GetInit() tea.Cmd {
+func (sl *GtextList) GetInit() tea.Cmd {
 	return nil
 }
 
-func (sl *SiteList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func (sl *GtextList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q":
-			m.ChangeState(tui.SiteList, tui.MainMenu)
+			m.ChangeState(tui.GtextList, tui.GtextMenu)
 			return m, nil
 		case "enter":
 			zap.S().Infoln(sl.list.SelectedItem())
@@ -73,14 +74,26 @@ func (sl *SiteList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // The main view, which just casls the appropriate sub-view
-func (sl *SiteList) GetView(m *tui.Model) string {
-	// Load sites from memory
+func (sl *GtextList) GetView(m *tui.Model) string {
+	// Load gtexts from memory
 	listItems := []list.Item{}
-	for _, site := range m.Sites {
-		item := Site{SiteID: site.SiteID, Definition: site.Definition, Site: site.Site, Slogin: site.Slogin, Spw: site.Spw}
+	for _, text := range m.Gtext {
+		item := Gtext{GtextID: text.GtextID, Definition: text.Definition, Note: getNoteSecond(&text.Note)}
 		listItems = append(listItems, item)
 	}
 	sl.list.SetItems(listItems)
 
 	return styles.ListStyle.Render(sl.list.View())
+}
+
+// Return secord row from list text.
+func getNoteSecond(text *string) string {
+	scanner := bufio.NewScanner(strings.NewReader(*text))
+	// Skip first sentence.
+	scanner.Scan()
+	if scanner.Scan() {
+		return scanner.Text()
+	}
+
+	return "No header note."
 }

@@ -56,25 +56,25 @@ const CardAdd = 9
 const CardList = 10
 
 // List credit card. //TODO
-const CardUpdate = 11
+//const CardUpdate = 11
 
 // Goph text menu.
-const GtextMenu = 12
+const GtextMenu = 11
 
-// Add credit card.
-const GtextAdd = 13
+// Add Goph text.
+const GtextAdd = 12
 
-// List credit card.
-const GtextList = 14
+// List Goph text.
+const GtextList = 13
 
 // Goph file menu.
-const GfileMenu = 15
+const GfileMenu = 14
 
-// Add credit card.
-const GfileAdd = 16
+// Add file.
+const GfileAdd = 15
 
-// List credit card.
-const GfileList = 17
+// List files.
+const GfileList = 16
 
 // Interface for all states selection.
 type State interface {
@@ -92,8 +92,9 @@ type Model struct {
 	CurrentState  int
 	PreviousState int
 	States        []State
-	Sites         []oapi.Site // Memory storage of Site data.
-	Cards         []oapi.Card // Memory storage of Cards data.
+	Sites         []oapi.Site  // Memory storage of Site data.
+	Cards         []oapi.Card  // Memory storage of Cards data.
+	Gtext         []oapi.Gtext // Memory storage of Text data.
 }
 
 // Init is the first function that will be called. It returns an optional
@@ -144,8 +145,19 @@ func (m *Model) ChangeState(current, next int) {
 		}
 		m.SetCards(cards)
 		zap.S().Infoln("Set sites from server: ", len(cards))
+	case GtextList:
+		gtext, status, err := client.GtextList(m.Conf, m.JWT)
+		if err != nil {
+			zap.S().Errorln("Can't loading user's gtext data: ", err)
+			break
+		}
+		if status != http.StatusOK {
+			zap.S().Errorln(errors.New(fmt.Sprintln("Get wrong status: ", status)))
+			break
+		}
+		m.SetGtext(gtext)
+		zap.S().Infoln("Set sites from server: ", len(gtext))
 	}
-	
 
 }
 
@@ -157,4 +169,9 @@ func (m *Model) SetSites(sites []oapi.Site) {
 // Set size, used for interface conformance save.
 func (m *Model) SetCards(cards []oapi.Card) {
 	m.Cards = cards
+}
+
+// Set size, used for interface conformance save.
+func (m *Model) SetGtext(gtexts []oapi.Gtext) {
+	m.Gtext = gtexts
 }

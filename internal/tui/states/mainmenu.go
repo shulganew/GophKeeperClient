@@ -57,6 +57,10 @@ func (mm *MainMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			case 1:
 				m.ChangeState(tui.MainMenu, tui.CardMenu)
 				return m, nil
+				// Goph text.
+			case 2:
+				m.ChangeState(tui.MainMenu, tui.GtextMenu)
+				return m, nil
 
 			case 5:
 				err := backup.CleanData()

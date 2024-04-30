@@ -7,6 +7,7 @@ import (
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states/card"
+	"github.com/shulganew/GophKeeperClient/internal/tui/states/gtext"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states/site"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -87,7 +88,11 @@ func InitModel(conf config.Config) tea.Model {
 	cl10 := card.NewCardList()
 	// List cards
 	//ca10 := card.NewCardAdd()
+	mg11 := gtext.NewGtextMenu()
+	gta12 := gtext.NewGtextAdd()
+	gtl13 := gtext.NewGtextList()
 
 	// TODO make transfer object and Model constructor
-	return tui.Model{Conf: conf, User: &user.NewUser, JWT: user.JWT, CurrentState: cSate, States: []tui.State{nl0, lf1, rf2, mm3, lm4, sl5, al6, siteU7, cm8, ca9, cl10}}
+	states := []tui.State{nl0, lf1, rf2, mm3, lm4, sl5, al6, siteU7, cm8, ca9, cl10, mg11, gta12, gtl13}
+	return tui.Model{Conf: conf, User: &user.NewUser, JWT: user.JWT, CurrentState: cSate, States: states}
 }

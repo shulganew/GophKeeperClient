@@ -13,8 +13,7 @@ import (
 
 // Add to Server user's site credentials: login and password.
 // If site created success on the server, it return new UUID of created site object.
-func SiteAdd(conf config.Config, jwt, def, siteURL, slogin, spw string) (site *oapi.NewSite, status int, err error) {
-
+func SiteAdd(conf config.Config, jwt, def, siteURL, slogin, spw string) (nsite *oapi.NewSite, status int, err error) {
 	// custom HTTP client
 	hc := http.Client{}
 	// with a raw http.Response
@@ -24,8 +23,8 @@ func SiteAdd(conf config.Config, jwt, def, siteURL, slogin, spw string) (site *o
 	}
 
 	// Create OAPI site object.
-	site = &oapi.NewSite{Definition: def, Site: siteURL, Slogin: slogin, Spw: spw}
-	resp, err := c.AddSite(context.TODO(), *site, func(ctx context.Context, req *http.Request) error {
+	nsite = &oapi.NewSite{Definition: def, Site: siteURL, Slogin: slogin, Spw: spw}
+	resp, err := c.AddSite(context.TODO(), *nsite, func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)
 		return nil
 	})
@@ -41,7 +40,7 @@ func SiteAdd(conf config.Config, jwt, def, siteURL, slogin, spw string) (site *o
 	zap.S().Debugln("Body: ", resp.Body)
 	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
 
-	return site, resp.StatusCode, nil
+	return nsite, resp.StatusCode, nil
 }
 
 // Retrive all sites credentials from the server.
