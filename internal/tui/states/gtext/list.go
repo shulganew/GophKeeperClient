@@ -55,7 +55,7 @@ func (sl *GtextList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q":
+		case "ctrl+q", "esc":
 			m.ChangeState(tui.GtextList, tui.GtextMenu)
 			return m, nil
 		case "enter":

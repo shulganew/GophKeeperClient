@@ -16,9 +16,8 @@ import (
 func CardAdd(conf config.Config, jwt, def, ccn, cvv, exp, hld string) (ncard *oapi.NewCard, status int, err error) {
 
 	// custom HTTP client
-	hc := http.Client{}
 	// with a raw http.Response
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(&hc))
+	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,9 +50,8 @@ func CardAdd(conf config.Config, jwt, def, ccn, cvv, exp, hld string) (ncard *oa
 func CardsList(conf config.Config, jwt string) (cards []oapi.Card, status int, err error) {
 
 	// custom HTTP client
-	hc := http.Client{}
 	// with a raw http.Response
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(&hc))
+	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn()))
 	if err != nil {
 		log.Fatal(err)
 	}

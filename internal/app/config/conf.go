@@ -11,7 +11,7 @@ import (
 )
 
 const AuthPrefix = "Bearer "
-const Shema = "http"
+const Shema = "https"
 const TokenExp = time.Hour * 3600
 const DataBaseType = "postgres"
 
@@ -23,7 +23,7 @@ type Config struct {
 func InitConfig() *Config {
 	config := Config{}
 	// read command line argue
-	serverAddress := flag.String("a", "localhost:8080", "Service GKeeper address")
+	serverAddress := flag.String("a", "localhost:8443", "Service GKeeper address")
 	flag.Parse()
 
 	// Check and parse URL

@@ -18,9 +18,7 @@ import (
 func GtextAdd(conf config.Config, jwt, text string) (ngtext *oapi.NewGtext, status int, err error) {
 
 	// custom HTTP client
-	hc := http.Client{}
-	// with a raw http.Response
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(&hc))
+	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -53,9 +51,7 @@ func GtextAdd(conf config.Config, jwt, text string) (ngtext *oapi.NewGtext, stat
 func GtextList(conf config.Config, jwt string) (gtexts []oapi.Gtext, status int, err error) {
 
 	// custom HTTP client
-	hc := http.Client{}
-	// with a raw http.Response
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(&hc))
+	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn()))
 	if err != nil {
 		log.Fatal(err)
 	}

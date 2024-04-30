@@ -54,7 +54,7 @@ func (sl *CardList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q":
+		case "ctrl+c", "esc":
 			m.ChangeState(tui.CardList, tui.CardMenu)
 			return m, nil
 		case "enter":
