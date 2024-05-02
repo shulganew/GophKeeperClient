@@ -7,6 +7,7 @@ import (
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states/card"
+	"github.com/shulganew/GophKeeperClient/internal/tui/states/gfile"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states/gtext"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states/site"
 	"go.uber.org/zap"
@@ -86,13 +87,18 @@ func InitModel(conf config.Config) tea.Model {
 	cm8 := card.NewCardMenu()
 	ca9 := card.NewCardAdd()
 	cl10 := card.NewCardList()
-	// List cards
-	//ca10 := card.NewCardAdd()
+
+	// Text menu
 	mg11 := gtext.NewGtextMenu()
 	gta12 := gtext.NewGtextAdd()
 	gtl13 := gtext.NewGtextList()
 
+	// Text menu
+	gm14 := gfile.NewGfileMenu()
+	gm15 := gfile.NewFileAdd()
+	//gtl13 := gfile.NewGtextList()
+
 	// TODO make transfer object and Model constructor
-	states := []tui.State{nl0, lf1, rf2, mm3, lm4, sl5, al6, siteU7, cm8, ca9, cl10, mg11, gta12, gtl13}
+	states := []tui.State{nl0, lf1, rf2, mm3, lm4, sl5, al6, siteU7, cm8, ca9, cl10, mg11, gta12, gtl13, gm14, gm15}
 	return tui.Model{Conf: conf, User: &user.NewUser, JWT: user.JWT, CurrentState: cSate, States: states}
 }

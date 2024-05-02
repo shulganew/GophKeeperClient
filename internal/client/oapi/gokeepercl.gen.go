@@ -44,6 +44,21 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+// Gfile defines model for Gfile.
+type Gfile struct {
+	// Definition Common sectert header
+	Definition string `json:"definition"`
+
+	// Fname File name on the user's side
+	Fname string `json:"fname"`
+
+	// GfileID file id - secret_id in DB.
+	GfileID string `json:"gfileID"`
+
+	// StorageID storage - id in minio storage.
+	StorageID string `json:"storageID"`
+}
+
 // Gtext defines model for Gtext.
 type Gtext struct {
 	// Definition Common sectert header
@@ -72,6 +87,15 @@ type NewCard struct {
 
 	// Hld holder
 	Hld string `json:"hld"`
+}
+
+// NewGfile defines model for NewGfile.
+type NewGfile struct {
+	// Definition Common sectert header
+	Definition string `json:"definition"`
+
+	// Fname File name on the user's side
+	Fname string `json:"fname"`
 }
 
 // NewGtext defines model for NewGtext.
@@ -234,6 +258,9 @@ type ClientInterface interface {
 	// ListCards request
 	ListCards(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// AddGfileWithBody request with any body
+	AddGfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// AddGtextWithBody request with any body
 	AddGtextWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -325,6 +352,18 @@ func (c *Client) AddCard(ctx context.Context, body AddCardJSONRequestBody, reqEd
 
 func (c *Client) ListCards(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListCardsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddGfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddGfileRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -554,6 +593,35 @@ func NewListCardsRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewAddGfileRequestWithBody generates requests for AddGfile with any type of body
+func NewAddGfileRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/user/file/add")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewAddGtextRequest calls the generic AddGtext builder with application/json body
 func NewAddGtextRequest(server string, body AddGtextJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -749,6 +817,9 @@ type ClientWithResponsesInterface interface {
 	// ListCardsWithResponse request
 	ListCardsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCardsResponse, error)
 
+	// AddGfileWithBodyWithResponse request with any body
+	AddGfileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGfileResponse, error)
+
 	// AddGtextWithBodyWithResponse request with any body
 	AddGtextWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGtextResponse, error)
 
@@ -849,6 +920,29 @@ func (r ListCardsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ListCardsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type AddGfileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *[]Gfile
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r AddGfileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddGfileResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1005,6 +1099,15 @@ func (c *ClientWithResponses) ListCardsWithResponse(ctx context.Context, reqEdit
 		return nil, err
 	}
 	return ParseListCardsResponse(rsp)
+}
+
+// AddGfileWithBodyWithResponse request with arbitrary body returning *AddGfileResponse
+func (c *ClientWithResponses) AddGfileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGfileResponse, error) {
+	rsp, err := c.AddGfileWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddGfileResponse(rsp)
 }
 
 // AddGtextWithBodyWithResponse request with arbitrary body returning *AddGtextResponse
@@ -1164,6 +1267,39 @@ func ParseListCardsResponse(rsp *http.Response) (*ListCardsResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAddGfileResponse parses an HTTP response from a AddGfileWithResponse call
+func ParseAddGfileResponse(rsp *http.Response) (*AddGfileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddGfileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest []Gfile
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 

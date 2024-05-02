@@ -20,7 +20,7 @@ type MainMenu struct {
 }
 
 func NewMainMenu() *MainMenu {
-	return &MainMenu{Choices: []string{"Sites logins/pw", "Credit cards", "Secret text", "Sectret bin data", "Help", "Logout"}}
+	return &MainMenu{Choices: []string{"Sites logins/pw", "Credit cards", "Secret text", "Sectret bin data", "Logout"}}
 }
 
 // Init is the first function that will be called. It returns an optional
@@ -61,8 +61,12 @@ func (mm *MainMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			case 2:
 				m.ChangeState(tui.MainMenu, tui.GtextMenu)
 				return m, nil
+				// Goph files.
+			case 3:
+				m.ChangeState(tui.MainMenu, tui.GfileMenu)
+				return m, nil
 
-			case 5:
+			case 4:
 				err := backup.CleanData()
 				if err != nil {
 					zap.S().Errorln("Error clean user's tmp file: ", err)
@@ -102,7 +106,7 @@ func (mm *MainMenu) choicesRegister(m *tui.Model) string {
 		b.WriteString(Checkbox(mm.Choices[i], mm.Choice == i))
 		b.WriteString("\n")
 		// Add Help and logout Separator
-		if len(mm.Choices)-3 == i {
+		if len(mm.Choices)-2 == i {
 			b.WriteString("\n")
 		}
 	}
