@@ -49,7 +49,6 @@ func GtextAdd(conf config.Config, jwt, text string) (ngtext *oapi.NewGtext, stat
 
 // Retrive all gtexts credentials from the server.
 func GtextList(conf config.Config, jwt string) (gtexts []oapi.Gtext, status int, err error) {
-
 	// custom HTTP client
 	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn()))
 	if err != nil {
@@ -70,7 +69,6 @@ func GtextList(conf config.Config, jwt string) (gtexts []oapi.Gtext, status int,
 		zap.S().Debugf("%s: %v\r\n", k, v[0])
 	}
 
-	zap.S().Debugln("Body: ", resp.Body)
 	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
 
 	// Get JWT token and save to User

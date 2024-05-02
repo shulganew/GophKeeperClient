@@ -1,8 +1,10 @@
-package card
+package gfile
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,29 +16,28 @@ import (
 )
 
 // Implemet State.
-var _ tui.State = (*CardList)(nil)
+var _ tui.State = (*GfileList)(nil)
 
-type Card oapi.Card
+type Gfile oapi.Gfile
 
-func (c Card) Title() string {
-	return fmt.Sprintf("%s ◉ %s", c.Definition, c.Ccn)
+func (g Gfile) Title() string {
+	return fmt.Sprint(g.Definition)
 }
-func (c Card) Description() string {
-	return fmt.Sprintf("%s ◉ %s ◉ %s", c.Hld, c.Exp, c.Cvv)
+func (g Gfile) Description() string {
+	return fmt.Sprint(g.Fname)
 }
-func (c Card) FilterValue() string { return c.Definition }
+func (g Gfile) FilterValue() string { return g.Definition }
 
-type CardList struct {
+type GfileList struct {
 	list list.Model
 }
 
-// CardList, state 10
-// List saved site credentials.
-func NewCardList() *CardList {
+// List saved Gfile credentials.
+func NewGfileList() *GfileList {
 	// Create empty list items
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
-	l.Title = "My bank cards."
-	cl := CardList{list: l}
+	l.Title = "My secret files."
+	cl := GfileList{list: l}
 	// Fix terminal bag.
 	tw, th, _ := term.GetSize(int(os.Stdout.Fd()))
 	h, v := styles.ListStyle.GetFrameSize()
@@ -46,19 +47,19 @@ func NewCardList() *CardList {
 
 // Init is the first function that wisl be casled. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (sl *CardList) GetInit() tea.Cmd {
+func (sl *GfileList) GetInit() tea.Cmd {
 	return nil
 }
 
-func (sl *CardList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func (sl *GfileList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "esc":
-			m.ChangeState(tui.CardList, tui.CardMenu)
+		case "ctrl+q", "esc":
+			m.ChangeState(tui.GfileList, tui.GfileMenu)
 			return m, nil
 		case "enter":
-			zap.S().Infoln(sl.list.SelectedItem().(Card).CardID)
+			zap.S().Infoln(sl.list.SelectedItem())
 			return m, nil
 		}
 
@@ -73,14 +74,26 @@ func (sl *CardList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // The main view, which just casls the appropriate sub-view
-func (sl *CardList) GetView(m *tui.Model) string {
-	// Load sites from memory
+func (sl *GfileList) GetView(m *tui.Model) string {
+	// Load Gfiles from memory
 	listItems := []list.Item{}
-	for _, card := range m.Cards {
-		item := Card{CardID: card.CardID, Definition: card.Definition, Ccn: card.Ccn, Cvv: card.Cvv, Exp: card.Exp, Hld: card.Hld}
+	for _, file := range m.Gfile {
+		item := Gfile{GfileID: file.GfileID, StorageID: file.StorageID ,Definition: file.Definition, Fname: file.Fname}
 		listItems = append(listItems, item)
 	}
 	sl.list.SetItems(listItems)
 
 	return styles.ListStyle.Render(sl.list.View())
+}
+
+// Return secord row from list text.
+func getNoteSecond(text *string) string {
+	scanner := bufio.NewScanner(strings.NewReader(*text))
+	// Skip first sentence.
+	scanner.Scan()
+	if scanner.Scan() {
+		return scanner.Text()
+	}
+
+	return "No header note."
 }

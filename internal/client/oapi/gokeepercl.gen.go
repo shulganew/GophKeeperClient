@@ -261,6 +261,9 @@ type ClientInterface interface {
 	// AddGfileWithBody request with any body
 	AddGfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListGfiles request
+	ListGfiles(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// AddGtextWithBody request with any body
 	AddGtextWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -364,6 +367,18 @@ func (c *Client) ListCards(ctx context.Context, reqEditors ...RequestEditorFn) (
 
 func (c *Client) AddGfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAddGfileRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListGfiles(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListGfilesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -622,6 +637,33 @@ func NewAddGfileRequestWithBody(server string, contentType string, body io.Reade
 	return req, nil
 }
 
+// NewListGfilesRequest generates requests for ListGfiles
+func NewListGfilesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/user/file/list")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewAddGtextRequest calls the generic AddGtext builder with application/json body
 func NewAddGtextRequest(server string, body AddGtextJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -820,6 +862,9 @@ type ClientWithResponsesInterface interface {
 	// AddGfileWithBodyWithResponse request with any body
 	AddGfileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGfileResponse, error)
 
+	// ListGfilesWithResponse request
+	ListGfilesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListGfilesResponse, error)
+
 	// AddGtextWithBodyWithResponse request with any body
 	AddGtextWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGtextResponse, error)
 
@@ -943,6 +988,29 @@ func (r AddGfileResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r AddGfileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListGfilesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]Gfile
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r ListGfilesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListGfilesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1108,6 +1176,15 @@ func (c *ClientWithResponses) AddGfileWithBodyWithResponse(ctx context.Context, 
 		return nil, err
 	}
 	return ParseAddGfileResponse(rsp)
+}
+
+// ListGfilesWithResponse request returning *ListGfilesResponse
+func (c *ClientWithResponses) ListGfilesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListGfilesResponse, error) {
+	rsp, err := c.ListGfiles(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListGfilesResponse(rsp)
 }
 
 // AddGtextWithBodyWithResponse request with arbitrary body returning *AddGtextResponse
@@ -1293,6 +1370,39 @@ func ParseAddGfileResponse(rsp *http.Response) (*AddGfileResponse, error) {
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListGfilesResponse parses an HTTP response from a ListGfilesWithResponse call
+func ParseListGfilesResponse(rsp *http.Response) (*ListGfilesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListGfilesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []Gfile
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

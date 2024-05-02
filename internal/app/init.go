@@ -96,9 +96,9 @@ func InitModel(conf config.Config) tea.Model {
 	// Text menu
 	gm14 := gfile.NewGfileMenu()
 	gm15 := gfile.NewFileAdd()
-	//gtl13 := gfile.NewGtextList()
+	gtl16 := gfile.NewGfileList()
 
 	// TODO make transfer object and Model constructor
-	states := []tui.State{nl0, lf1, rf2, mm3, lm4, sl5, al6, siteU7, cm8, ca9, cl10, mg11, gta12, gtl13, gm14, gm15}
+	states := []tui.State{nl0, lf1, rf2, mm3, lm4, sl5, al6, siteU7, cm8, ca9, cl10, mg11, gta12, gtl13, gm14, gm15, gtl16}
 	return tui.Model{Conf: conf, User: &user.NewUser, JWT: user.JWT, CurrentState: cSate, States: states}
 }

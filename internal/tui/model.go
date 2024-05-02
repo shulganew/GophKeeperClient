@@ -95,6 +95,7 @@ type Model struct {
 	Sites         []oapi.Site  // Memory storage of Site data.
 	Cards         []oapi.Card  // Memory storage of Cards data.
 	Gtext         []oapi.Gtext // Memory storage of Text data.
+	Gfile         []oapi.Gfile // Memory storage of Files metadata.
 }
 
 // Init is the first function that will be called. It returns an optional
@@ -157,6 +158,18 @@ func (m *Model) ChangeState(current, next int) {
 		}
 		m.SetGtext(gtext)
 		zap.S().Infoln("Set sites from server: ", len(gtext))
+	case GfileList:
+		gfile, status, err := client.GfileList(m.Conf, m.JWT)
+		if err != nil {
+			zap.S().Errorln("Can't loading user's gtext data: ", err)
+			break
+		}
+		if status != http.StatusOK {
+			zap.S().Errorln(errors.New(fmt.Sprintln("Get wrong status: ", status)))
+			break
+		}
+		m.SetGfile(gfile)
+		zap.S().Infoln("Set sites from server: ", len(gfile))
 	}
 
 }
@@ -174,4 +187,9 @@ func (m *Model) SetCards(cards []oapi.Card) {
 // Set size, used for interface conformance save.
 func (m *Model) SetGtext(gtexts []oapi.Gtext) {
 	m.Gtext = gtexts
+}
+
+// Set size, used for interface conformance save.
+func (m *Model) SetGfile(gfiles []oapi.Gfile) {
+	m.Gfile = gfiles
 }

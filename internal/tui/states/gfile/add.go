@@ -85,7 +85,7 @@ func (rf *FileAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			// If user adding done success, enter for continue...
 			if rf.IsAddOk {
 				rf.cleanform()
-				m.ChangeState(tui.GfileAdd, tui.MainMenu)
+				m.ChangeState(tui.GfileAdd, tui.GfileMenu)
 				return m, nil
 			}
 			// Submit button pressed!

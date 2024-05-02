@@ -65,7 +65,6 @@ func SiteList(conf config.Config, jwt string) (sites []oapi.Site, status int, er
 		zap.S().Debugf("%s: %v\r\n", k, v[0])
 	}
 
-	zap.S().Debugln("Body: ", resp.Body)
 	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
 
 	// Get JWT token and save to User

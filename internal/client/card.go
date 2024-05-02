@@ -38,7 +38,6 @@ func CardAdd(conf config.Config, jwt, def, ccn, cvv, exp, hld string) (ncard *oa
 		zap.S().Debugf("%s: %v\r\n", k, v[0])
 	}
 
-	zap.S().Debugln("Body: ", resp.Body)
 	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
 
 	// Get JWT token and save to User
@@ -48,7 +47,6 @@ func CardAdd(conf config.Config, jwt, def, ccn, cvv, exp, hld string) (ncard *oa
 
 // Retrive all cards credentials from the server.
 func CardsList(conf config.Config, jwt string) (cards []oapi.Card, status int, err error) {
-
 	// custom HTTP client
 	// with a raw http.Response
 	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn()))
@@ -70,11 +68,9 @@ func CardsList(conf config.Config, jwt string) (cards []oapi.Card, status int, e
 		zap.S().Debugf("%s: %v\r\n", k, v[0])
 	}
 
-	zap.S().Debugln("Body: ", resp.Body)
 	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
 
 	// Get JWT token and save to User
-
 	// Decode cards from body.
 	if resp.StatusCode == http.StatusOK {
 		err = json.NewDecoder(resp.Body).Decode(&cards)
@@ -82,6 +78,5 @@ func CardsList(conf config.Config, jwt string) (cards []oapi.Card, status int, e
 			zap.S().Errorln("Can't write to response in ListCard handler", err)
 		}
 	}
-
 	return cards, resp.StatusCode, nil
 }
