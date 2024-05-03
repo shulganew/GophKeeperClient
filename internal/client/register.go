@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"strings"
 
@@ -13,16 +12,7 @@ import (
 
 const authPrefix = "Bearer "
 
-func UserReg(ctx context.Context, conf config.Config, login, pw, email string) (user *oapi.NewUser, jwt string, status int, err error) {
-	// custom HTTP client
-	hc := http.Client{}
-
-	// with a raw http.Response
-
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(&hc))
-	if err != nil {
-		log.Fatal(err)
-	}
+func UserReg(c *oapi.Client, ctx context.Context, conf config.Config, login, pw, email string) (user *oapi.NewUser, jwt string, status int, err error) {
 	// Create OAPI user.
 	user = &oapi.NewUser{Login: login, Password: pw, Email: email}
 	resp, err := c.CreateUser(ctx, *user)

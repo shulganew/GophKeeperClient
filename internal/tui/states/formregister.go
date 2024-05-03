@@ -109,7 +109,7 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
 
 				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
-				user, jwt, status, err := client.UserReg(context.Background(), m.Conf, rf.Inputs[0].Value(), rf.Inputs[2].Value(), rf.Inputs[1].Value())
+				user, jwt, status, err := client.UserReg(m.Client, context.Background(), m.Conf, rf.Inputs[0].Value(), rf.Inputs[2].Value(), rf.Inputs[1].Value())
 				rf.ansver = true
 				rf.ansverCode = status
 				rf.ansverError = err

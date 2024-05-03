@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strings"
 
@@ -15,14 +14,7 @@ import (
 
 // Add to Server user's gtext credentials: login and password.
 // If gtext created success on the server, it return new UUID of created gtext object.
-func GtextAdd(conf config.Config, jwt, text string) (ngtext *oapi.NewGtext, status int, err error) {
-
-	// custom HTTP client
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn()))
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func GtextAdd(c *oapi.Client, conf config.Config, jwt, text string) (ngtext *oapi.NewGtext, status int, err error) {
 	// Create OAPI gtext object.
 	ngtext = &oapi.NewGtext{Definition: getDef(&text), Note: text}
 	// Add saved jwt token for auth.
@@ -48,12 +40,7 @@ func GtextAdd(conf config.Config, jwt, text string) (ngtext *oapi.NewGtext, stat
 }
 
 // Retrive all gtexts credentials from the server.
-func GtextList(conf config.Config, jwt string) (gtexts []oapi.Gtext, status int, err error) {
-	// custom HTTP client
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn()))
-	if err != nil {
-		log.Fatal(err)
-	}
+func GtextList(c *oapi.Client, conf config.Config, jwt string) (gtexts []oapi.Gtext, status int, err error) {
 
 	// Create OAPI gtext object.
 	resp, err := c.ListGtexts(context.TODO(), func(ctx context.Context, req *http.Request) error {

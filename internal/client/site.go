@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
@@ -13,15 +12,7 @@ import (
 
 // Add to Server user's site credentials: login and password.
 // If site created success on the server, it return new UUID of created site object.
-func SiteAdd(conf config.Config, jwt, def, siteURL, slogin, spw string) (nsite *oapi.NewSite, status int, err error) {
-	// custom HTTP client
-
-	// with a raw http.Response
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn()))
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func SiteAdd(c *oapi.Client, conf config.Config, jwt, def, siteURL, slogin, spw string) (nsite *oapi.NewSite, status int, err error) {
 	// Create OAPI site object.
 	nsite = &oapi.NewSite{Definition: def, Site: siteURL, Slogin: slogin, Spw: spw}
 	resp, err := c.AddSite(context.TODO(), *nsite, func(ctx context.Context, req *http.Request) error {
@@ -44,13 +35,7 @@ func SiteAdd(conf config.Config, jwt, def, siteURL, slogin, spw string) (nsite *
 }
 
 // Retrive all sites credentials from the server.
-func SiteList(conf config.Config, jwt string) (sites []oapi.Site, status int, err error) {
-
-	// with a raw http.Response
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn()))
-	if err != nil {
-		log.Fatal(err)
-	}
+func SiteList(c *oapi.Client, conf config.Config, jwt string) (sites []oapi.Site, status int, err error) {
 	// Create OAPI site object.
 	resp, err := c.ListSites(context.TODO(), func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)

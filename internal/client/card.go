@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
@@ -13,14 +12,7 @@ import (
 
 // Add to Server user's card credentials: login and password.
 // If card created success on the server, it return new UUID of created card object.
-func CardAdd(conf config.Config, jwt, def, ccn, cvv, exp, hld string) (ncard *oapi.NewCard, status int, err error) {
-
-	// custom HTTP client
-	// with a raw http.Response
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn()))
-	if err != nil {
-		log.Fatal(err)
-	}
+func CardAdd(c *oapi.Client, conf config.Config, jwt, def, ccn, cvv, exp, hld string) (ncard *oapi.NewCard, status int, err error) {
 
 	// Create OAPI card object.
 	ncard = &oapi.NewCard{Definition: def, Ccn: ccn, Cvv: cvv, Exp: exp, Hld: hld}
@@ -41,18 +33,11 @@ func CardAdd(conf config.Config, jwt, def, ccn, cvv, exp, hld string) (ncard *oa
 	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
 
 	// Get JWT token and save to User
-
 	return ncard, resp.StatusCode, nil
 }
 
 // Retrive all cards credentials from the server.
-func CardsList(conf config.Config, jwt string) (cards []oapi.Card, status int, err error) {
-	// custom HTTP client
-	// with a raw http.Response
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn()))
-	if err != nil {
-		log.Fatal(err)
-	}
+func CardsList(c *oapi.Client, conf config.Config, jwt string) (cards []oapi.Card, status int, err error) {
 
 	// Create OAPI card object.
 	resp, err := c.ListCards(context.TODO(), func(ctx context.Context, req *http.Request) error {

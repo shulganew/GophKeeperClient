@@ -7,7 +7,6 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 	"os"
 
@@ -73,15 +72,8 @@ func (r *UploadReader) Read(b []byte) (totlal int, err error) {
 }
 
 // Upload files to server.
-func FileAdd(conf config.Config, jwt, def, fPath string) (status int, err error) {
-
-	// custom HTTP client
-	// with a raw http.Response
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn()))
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func FileAdd(c *oapi.Client, conf config.Config, jwt, def, fPath string) (status int, err error) {
+	// Loading file form os
 	file, err := os.Open(fPath)
 	if err != nil {
 		return http.StatusInternalServerError, err
@@ -131,13 +123,7 @@ func FileAdd(conf config.Config, jwt, def, fPath string) (status int, err error)
 	return resp.StatusCode, nil
 }
 
-func GfileList(conf config.Config, jwt string) (gfiles []oapi.Gfile, status int, err error) {
-	// custom HTTP client
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn()))
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func GfileList(c *oapi.Client, conf config.Config, jwt string) (gfiles []oapi.Gfile, status int, err error) {
 	// Create OAPI gfile object.
 	resp, err := c.ListGfiles(context.TODO(), func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)
@@ -163,4 +149,35 @@ func GfileList(conf config.Config, jwt string) (gfiles []oapi.Gfile, status int,
 	}
 
 	return gfiles, resp.StatusCode, nil
+}
+
+func GfileGet(c *oapi.Client, jwt string, fileID, fileName string) (downloaded bool, status int, err error) {
+	// Get file.
+	resp, err := c.GetGfile(context.TODO(), fileID, func(ctx context.Context, req *http.Request) error {
+		req.Header.Add("Authorization", config.AuthPrefix+jwt)
+		return nil
+	})
+	if err != nil {
+		return false, http.StatusInternalServerError, err
+	}
+	// Create file
+	file, err := os.Create(fileName)
+	defer func() {
+		if err := file.Close(); err != nil {
+			zap.S().Errorln("Can't close file: ", err)
+		}
+	}()
+
+	if err != nil {
+		zap.S().Errorln("Can't create file: ", file)
+		return false, http.StatusInternalServerError, err
+	}
+	// Write file from server.
+	n, err := io.Copy(file, resp.Body)
+	if err != nil {
+		zap.S().Errorln("Can't read from body: ", file)
+		return false, http.StatusInternalServerError, err
+	}
+	zap.S().Infoln("Write file: ", fileName, " ", n)
+	return true, resp.StatusCode, nil
 }

@@ -75,7 +75,7 @@ func (rf *FileAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.ChangeState(tui.GfileAdd, tui.NotLoginMenu)
 				return m, nil
 			}
-			m.ChangeState(tui.GfileAdd, tui.MainMenu)
+			m.ChangeState(tui.GfileAdd, tui.GfileMenu)
 			return m, nil
 
 		case "tab", "shift+tab", "enter", "up", "down":
@@ -92,7 +92,7 @@ func (rf *FileAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
 				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value())
 
-				status, err := client.FileAdd(m.Conf, m.JWT, rf.Inputs[0].Value(), rf.Inputs[1].Value())
+				status, err := client.FileAdd(m.Client, m.Conf, m.JWT, rf.Inputs[0].Value(), rf.Inputs[1].Value())
 				rf.ansver = true
 				rf.ansverCode = status
 				rf.ansverError = err

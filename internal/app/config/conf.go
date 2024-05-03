@@ -17,13 +17,15 @@ const DataBaseType = "postgres"
 
 type Config struct {
 	// flag -a, Server address
-	Address string
+	Address        string
+	FileSavingPath string
 }
 
 func InitConfig() *Config {
 	config := Config{}
 	// read command line argue
 	serverAddress := flag.String("a", "localhost:8443", "Service GKeeper address")
+	filePath := flag.String("f", "/home/igor/files/", "Service GKeeper address")
 	flag.Parse()
 
 	// Check and parse URL
@@ -43,6 +45,7 @@ func InitConfig() *Config {
 		zap.S().Infoln("Env var RUN_ADDRESS not found, use default", config.Address)
 	}
 
+	config.FileSavingPath = *filePath
 	zap.S().Infoln("Configuration complite")
 	return &config
 }

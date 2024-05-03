@@ -1,9 +1,18 @@
 package app
 
 import (
+	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"log"
+	"net"
+	"net/http"
+	"os"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/shulganew/GophKeeperClient/internal/app/backup"
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
+	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states/card"
@@ -51,6 +60,13 @@ func InitLog() zap.SugaredLogger {
 }
 
 func InitModel(conf config.Config) tea.Model {
+
+	// Client with TLS session.
+	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(getTLSClietn()))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Load User from backup
 	cSate := tui.MainMenu
 	user, err := backup.LoadUser()
@@ -100,5 +116,29 @@ func InitModel(conf config.Config) tea.Model {
 
 	// TODO make transfer object and Model constructor
 	states := []tui.State{nl0, lf1, rf2, mm3, lm4, sl5, al6, siteU7, cm8, ca9, cl10, mg11, gta12, gtl13, gm14, gm15, gtl16}
-	return tui.Model{Conf: conf, User: &user.NewUser, JWT: user.JWT, CurrentState: cSate, States: states}
+	return tui.Model{Conf: conf, Client: c, User: &user.NewUser, JWT: user.JWT, CurrentState: cSate, States: states}
+}
+
+func getTLSClietn() *http.Client {
+	caCertf, _ := os.ReadFile("./cert/server.crt")
+	rootCAs, _ := x509.SystemCertPool()
+	// handle case where rootCAs == nil and create an empty pool...
+	if ok := rootCAs.AppendCertsFromPEM(caCertf); !ok {
+		zap.S().Infoln("Can't load trasted sertifecate!")
+	}
+
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+		RootCAs:            rootCAs,
+	}
+
+	hc := &http.Client{
+		Transport: &http.Transport{
+			DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				conn, err := tls.Dial(network, addr, tlsConfig)
+				return conn, err
+			},
+		},
+	}
+	return hc
 }

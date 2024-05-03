@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"strings"
 
@@ -11,14 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func UserLogin(conf config.Config, login, pw string) (user *oapi.NewUser, jwt string, status int, err error) {
-	// custom HTTP client
-	hc := http.Client{}
-	// with a raw http.Response
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(&hc))
-	if err != nil {
-		log.Fatal(err)
-	}
+func UserLogin(c *oapi.Client, conf config.Config, login, pw string) (user *oapi.NewUser, jwt string, status int, err error) {
 	// Create OAPI user.
 	user = &oapi.NewUser{Login: login, Password: pw}
 	resp, err := c.Login(context.Background(), *user)

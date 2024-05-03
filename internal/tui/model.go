@@ -85,6 +85,7 @@ type State interface {
 
 type Model struct {
 	Conf          config.Config
+	Client        *oapi.Client  //client for request.
 	User          *oapi.NewUser // Store user after login or register.
 	JWT           string        // Store user current token.
 	IsUserLogedIn bool          // Quick check users registration.
@@ -123,7 +124,7 @@ func (m *Model) ChangeState(current, next int) {
 	// Preloading data to memory model.
 	switch m.CurrentState {
 	case SiteList:
-		sites, status, err := client.SiteList(m.Conf, m.JWT)
+		sites, status, err := client.SiteList(m.Client, m.Conf, m.JWT)
 		if err != nil {
 			zap.S().Errorln("Can't loading user's site data: ", err)
 			break
@@ -135,7 +136,7 @@ func (m *Model) ChangeState(current, next int) {
 		m.SetSites(sites)
 		zap.S().Infoln("Set sites from server: ", len(sites))
 	case CardList:
-		cards, status, err := client.CardsList(m.Conf, m.JWT)
+		cards, status, err := client.CardsList(m.Client, m.Conf, m.JWT)
 		if err != nil {
 			zap.S().Errorln("Can't loading user's cards data: ", err)
 			break
@@ -147,7 +148,7 @@ func (m *Model) ChangeState(current, next int) {
 		m.SetCards(cards)
 		zap.S().Infoln("Set sites from server: ", len(cards))
 	case GtextList:
-		gtext, status, err := client.GtextList(m.Conf, m.JWT)
+		gtext, status, err := client.GtextList(m.Client, m.Conf, m.JWT)
 		if err != nil {
 			zap.S().Errorln("Can't loading user's gtext data: ", err)
 			break
@@ -159,7 +160,7 @@ func (m *Model) ChangeState(current, next int) {
 		m.SetGtext(gtext)
 		zap.S().Infoln("Set sites from server: ", len(gtext))
 	case GfileList:
-		gfile, status, err := client.GfileList(m.Conf, m.JWT)
+		gfile, status, err := client.GfileList(m.Client, m.Conf, m.JWT)
 		if err != nil {
 			zap.S().Errorln("Can't loading user's gtext data: ", err)
 			break
@@ -171,7 +172,6 @@ func (m *Model) ChangeState(current, next int) {
 		m.SetGfile(gfile)
 		zap.S().Infoln("Set sites from server: ", len(gfile))
 	}
-
 }
 
 // Set size, used for interface conformance save.

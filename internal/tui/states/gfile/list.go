@@ -1,13 +1,12 @@
 package gfile
 
 import (
-	"bufio"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/shulganew/GophKeeperClient/internal/client"
 	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/styles"
@@ -61,6 +60,9 @@ func (sl *GfileList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			zap.S().Infoln(sl.list.SelectedItem())
 			return m, nil
+		case "insert":
+			zap.S().Infoln(client.GfileGet(m.Client, m.JWT, sl.list.SelectedItem().(Gfile).GfileID, sl.list.SelectedItem().(Gfile).Fname))
+			return m, nil
 		}
 
 	case tea.WindowSizeMsg:
@@ -78,22 +80,10 @@ func (sl *GfileList) GetView(m *tui.Model) string {
 	// Load Gfiles from memory
 	listItems := []list.Item{}
 	for _, file := range m.Gfile {
-		item := Gfile{GfileID: file.GfileID, StorageID: file.StorageID ,Definition: file.Definition, Fname: file.Fname}
+		item := Gfile{GfileID: file.GfileID, StorageID: file.StorageID, Definition: file.Definition, Fname: file.Fname}
 		listItems = append(listItems, item)
 	}
 	sl.list.SetItems(listItems)
 
 	return styles.ListStyle.Render(sl.list.View())
-}
-
-// Return secord row from list text.
-func getNoteSecond(text *string) string {
-	scanner := bufio.NewScanner(strings.NewReader(*text))
-	// Skip first sentence.
-	scanner.Scan()
-	if scanner.Scan() {
-		return scanner.Text()
-	}
-
-	return "No header note."
 }
