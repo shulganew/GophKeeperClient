@@ -56,9 +56,6 @@ type Gfile struct {
 
 	// GfileID file id - secret_id in DB.
 	GfileID string `json:"gfileID"`
-
-	// StorageID storage - id in minio storage.
-	StorageID string `json:"storageID"`
 }
 
 // Gtext defines model for Gtext.
@@ -98,9 +95,6 @@ type NewGfile struct {
 
 	// Fname File name on the user's side
 	Fname string `json:"fname"`
-
-	// StorageID storage - id in minio storage.
-	StorageID string `json:"storageID"`
 }
 
 // NewGtext defines model for NewGtext.
@@ -166,11 +160,20 @@ type CreateUserJSONRequestBody = NewUser
 // AddCardJSONRequestBody defines body for AddCard for application/json ContentType.
 type AddCardJSONRequestBody = NewCard
 
-// AddGtextJSONRequestBody defines body for AddGtext for application/json ContentType.
-type AddGtextJSONRequestBody = NewGtext
+// UpdateCardJSONRequestBody defines body for UpdateCard for application/json ContentType.
+type UpdateCardJSONRequestBody = Card
 
 // AddSiteJSONRequestBody defines body for AddSite for application/json ContentType.
 type AddSiteJSONRequestBody = NewSite
+
+// UpdateSiteJSONRequestBody defines body for UpdateSite for application/json ContentType.
+type UpdateSiteJSONRequestBody = Site
+
+// AddGtextJSONRequestBody defines body for AddGtext for application/json ContentType.
+type AddGtextJSONRequestBody = NewGtext
+
+// UpdateGtextJSONRequestBody defines body for UpdateGtext for application/json ContentType.
+type UpdateGtextJSONRequestBody = Gtext
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -255,38 +258,56 @@ type ClientInterface interface {
 
 	CreateUser(ctx context.Context, body CreateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListCards request
+	ListCards(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// AddCardWithBody request with any body
 	AddCardWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	AddCard(ctx context.Context, body AddCardJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListCards request
-	ListCards(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpdateCardWithBody request with any body
+	UpdateCardWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AddGfileWithBody request with any body
-	AddGfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateCard(ctx context.Context, body UpdateCardJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListGfiles request
 	ListGfiles(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// AddGfileWithBody request with any body
+	AddGfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetGfile request
 	GetGfile(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AddGtextWithBody request with any body
-	AddGtextWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	AddGtext(ctx context.Context, body AddGtextJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListGtexts request
-	ListGtexts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListSites request
+	ListSites(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AddSiteWithBody request with any body
 	AddSiteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	AddSite(ctx context.Context, body AddSiteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListSites request
-	ListSites(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpdateSiteWithBody request with any body
+	UpdateSiteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateSite(ctx context.Context, body UpdateSiteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListGtexts request
+	ListGtexts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AddGtextWithBody request with any body
+	AddGtextWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AddGtext(ctx context.Context, body AddGtextJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateGtextWithBody request with any body
+	UpdateGtextWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateGtext(ctx context.Context, body UpdateGtextJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DelAny request
+	DelAny(ctx context.Context, secretID string, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) LoginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -337,6 +358,18 @@ func (c *Client) CreateUser(ctx context.Context, body CreateUserJSONRequestBody,
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListCards(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCardsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) AddCardWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAddCardRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -361,8 +394,8 @@ func (c *Client) AddCard(ctx context.Context, body AddCardJSONRequestBody, reqEd
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListCards(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListCardsRequest(c.Server)
+func (c *Client) UpdateCardWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateCardRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -373,8 +406,8 @@ func (c *Client) ListCards(ctx context.Context, reqEditors ...RequestEditorFn) (
 	return c.Client.Do(req)
 }
 
-func (c *Client) AddGfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAddGfileRequestWithBody(c.Server, contentType, body)
+func (c *Client) UpdateCard(ctx context.Context, body UpdateCardJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateCardRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -397,6 +430,18 @@ func (c *Client) ListGfiles(ctx context.Context, reqEditors ...RequestEditorFn) 
 	return c.Client.Do(req)
 }
 
+func (c *Client) AddGfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddGfileRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetGfile(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetGfileRequest(c.Server, fileID)
 	if err != nil {
@@ -409,32 +454,8 @@ func (c *Client) GetGfile(ctx context.Context, fileID string, reqEditors ...Requ
 	return c.Client.Do(req)
 }
 
-func (c *Client) AddGtextWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAddGtextRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) AddGtext(ctx context.Context, body AddGtextJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAddGtextRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListGtexts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListGtextsRequest(c.Server)
+func (c *Client) ListSites(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSitesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -469,8 +490,92 @@ func (c *Client) AddSite(ctx context.Context, body AddSiteJSONRequestBody, reqEd
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListSites(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSitesRequest(c.Server)
+func (c *Client) UpdateSiteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSiteRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateSite(ctx context.Context, body UpdateSiteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSiteRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListGtexts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListGtextsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddGtextWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddGtextRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddGtext(ctx context.Context, body AddGtextJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddGtextRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateGtextWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateGtextRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateGtext(ctx context.Context, body UpdateGtextJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateGtextRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DelAny(ctx context.Context, secretID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelAnyRequest(c.Server, secretID)
 	if err != nil {
 		return nil, err
 	}
@@ -501,7 +606,7 @@ func NewLoginRequestWithBody(server string, contentType string, body io.Reader) 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/auth/login")
+	operationPath := fmt.Sprintf("/auth/login")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -541,47 +646,7 @@ func NewCreateUserRequestWithBody(server string, contentType string, body io.Rea
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/auth/register")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewAddCardRequest calls the generic AddCard builder with application/json body
-func NewAddCardRequest(server string, body AddCardJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewAddCardRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewAddCardRequestWithBody generates requests for AddCard with any type of body
-func NewAddCardRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/user/card/add")
+	operationPath := fmt.Sprintf("/auth/register")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -610,7 +675,114 @@ func NewListCardsRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/user/card/list")
+	operationPath := fmt.Sprintf("/user/card")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAddCardRequest calls the generic AddCard builder with application/json body
+func NewAddCardRequest(server string, body AddCardJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAddCardRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAddCardRequestWithBody generates requests for AddCard with any type of body
+func NewAddCardRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/user/card")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewUpdateCardRequest calls the generic UpdateCard builder with application/json body
+func NewUpdateCardRequest(server string, body UpdateCardJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateCardRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewUpdateCardRequestWithBody generates requests for UpdateCard with any type of body
+func NewUpdateCardRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/user/card")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListGfilesRequest generates requests for ListGfiles
+func NewListGfilesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/user/file")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -637,7 +809,7 @@ func NewAddGfileRequestWithBody(server string, contentType string, body io.Reade
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/user/file/add")
+	operationPath := fmt.Sprintf("/user/file")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -653,33 +825,6 @@ func NewAddGfileRequestWithBody(server string, contentType string, body io.Reade
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListGfilesRequest generates requests for ListGfiles
-func NewListGfilesRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/user/file/list")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return req, nil
 }
@@ -700,7 +845,7 @@ func NewGetGfileRequest(server string, fileID string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/user/file/%s", pathParam0)
+	operationPath := fmt.Sprintf("/user/file/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -718,19 +863,8 @@ func NewGetGfileRequest(server string, fileID string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewAddGtextRequest calls the generic AddGtext builder with application/json body
-func NewAddGtextRequest(server string, body AddGtextJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewAddGtextRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewAddGtextRequestWithBody generates requests for AddGtext with any type of body
-func NewAddGtextRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// NewListSitesRequest generates requests for ListSites
+func NewListSitesRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -738,36 +872,7 @@ func NewAddGtextRequestWithBody(server string, contentType string, body io.Reade
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/user/gtext/add")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListGtextsRequest generates requests for ListGtexts
-func NewListGtextsRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/user/gtext/list")
+	operationPath := fmt.Sprintf("/user/site")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -805,7 +910,7 @@ func NewAddSiteRequestWithBody(server string, contentType string, body io.Reader
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/user/site/add")
+	operationPath := fmt.Sprintf("/user/site")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -825,8 +930,19 @@ func NewAddSiteRequestWithBody(server string, contentType string, body io.Reader
 	return req, nil
 }
 
-// NewListSitesRequest generates requests for ListSites
-func NewListSitesRequest(server string) (*http.Request, error) {
+// NewUpdateSiteRequest calls the generic UpdateSite builder with application/json body
+func NewUpdateSiteRequest(server string, body UpdateSiteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateSiteRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewUpdateSiteRequestWithBody generates requests for UpdateSite with any type of body
+func NewUpdateSiteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -834,7 +950,36 @@ func NewListSitesRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/user/site/list")
+	operationPath := fmt.Sprintf("/user/site")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListGtextsRequest generates requests for ListGtexts
+func NewListGtextsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/user/text")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -845,6 +990,120 @@ func NewListSitesRequest(server string) (*http.Request, error) {
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAddGtextRequest calls the generic AddGtext builder with application/json body
+func NewAddGtextRequest(server string, body AddGtextJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAddGtextRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAddGtextRequestWithBody generates requests for AddGtext with any type of body
+func NewAddGtextRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/user/text")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewUpdateGtextRequest calls the generic UpdateGtext builder with application/json body
+func NewUpdateGtextRequest(server string, body UpdateGtextJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateGtextRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewUpdateGtextRequestWithBody generates requests for UpdateGtext with any type of body
+func NewUpdateGtextRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/user/text")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDelAnyRequest generates requests for DelAny
+func NewDelAnyRequest(server string, secretID string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "secretID", runtime.ParamLocationPath, secretID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/user/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -905,38 +1164,56 @@ type ClientWithResponsesInterface interface {
 
 	CreateUserWithResponse(ctx context.Context, body CreateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUserResponse, error)
 
+	// ListCardsWithResponse request
+	ListCardsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCardsResponse, error)
+
 	// AddCardWithBodyWithResponse request with any body
 	AddCardWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddCardResponse, error)
 
 	AddCardWithResponse(ctx context.Context, body AddCardJSONRequestBody, reqEditors ...RequestEditorFn) (*AddCardResponse, error)
 
-	// ListCardsWithResponse request
-	ListCardsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCardsResponse, error)
+	// UpdateCardWithBodyWithResponse request with any body
+	UpdateCardWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCardResponse, error)
 
-	// AddGfileWithBodyWithResponse request with any body
-	AddGfileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGfileResponse, error)
+	UpdateCardWithResponse(ctx context.Context, body UpdateCardJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCardResponse, error)
 
 	// ListGfilesWithResponse request
 	ListGfilesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListGfilesResponse, error)
 
+	// AddGfileWithBodyWithResponse request with any body
+	AddGfileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGfileResponse, error)
+
 	// GetGfileWithResponse request
 	GetGfileWithResponse(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*GetGfileResponse, error)
 
-	// AddGtextWithBodyWithResponse request with any body
-	AddGtextWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGtextResponse, error)
-
-	AddGtextWithResponse(ctx context.Context, body AddGtextJSONRequestBody, reqEditors ...RequestEditorFn) (*AddGtextResponse, error)
-
-	// ListGtextsWithResponse request
-	ListGtextsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListGtextsResponse, error)
+	// ListSitesWithResponse request
+	ListSitesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSitesResponse, error)
 
 	// AddSiteWithBodyWithResponse request with any body
 	AddSiteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddSiteResponse, error)
 
 	AddSiteWithResponse(ctx context.Context, body AddSiteJSONRequestBody, reqEditors ...RequestEditorFn) (*AddSiteResponse, error)
 
-	// ListSitesWithResponse request
-	ListSitesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSitesResponse, error)
+	// UpdateSiteWithBodyWithResponse request with any body
+	UpdateSiteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSiteResponse, error)
+
+	UpdateSiteWithResponse(ctx context.Context, body UpdateSiteJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSiteResponse, error)
+
+	// ListGtextsWithResponse request
+	ListGtextsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListGtextsResponse, error)
+
+	// AddGtextWithBodyWithResponse request with any body
+	AddGtextWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGtextResponse, error)
+
+	AddGtextWithResponse(ctx context.Context, body AddGtextJSONRequestBody, reqEditors ...RequestEditorFn) (*AddGtextResponse, error)
+
+	// UpdateGtextWithBodyWithResponse request with any body
+	UpdateGtextWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateGtextResponse, error)
+
+	UpdateGtextWithResponse(ctx context.Context, body UpdateGtextJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateGtextResponse, error)
+
+	// DelAnyWithResponse request
+	DelAnyWithResponse(ctx context.Context, secretID string, reqEditors ...RequestEditorFn) (*DelAnyResponse, error)
 }
 
 type LoginResponse struct {
@@ -983,6 +1260,28 @@ func (r CreateUserResponse) StatusCode() int {
 	return 0
 }
 
+type ListCardsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]Card
+}
+
+// Status returns HTTPResponse.Status
+func (r ListCardsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListCardsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type AddCardResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -1006,37 +1305,14 @@ func (r AddCardResponse) StatusCode() int {
 	return 0
 }
 
-type ListCardsResponse struct {
+type UpdateCardResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]Card
-}
-
-// Status returns HTTPResponse.Status
-func (r ListCardsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListCardsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type AddGfileResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *[]Gfile
 	JSONDefault  *Error
 }
 
 // Status returns HTTPResponse.Status
-func (r AddGfileResponse) Status() string {
+func (r UpdateCardResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1044,7 +1320,7 @@ func (r AddGfileResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r AddGfileResponse) StatusCode() int {
+func (r UpdateCardResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1074,6 +1350,29 @@ func (r ListGfilesResponse) StatusCode() int {
 	return 0
 }
 
+type AddGfileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *[]Gfile
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r AddGfileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddGfileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetGfileResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -1096,15 +1395,15 @@ func (r GetGfileResponse) StatusCode() int {
 	return 0
 }
 
-type AddGtextResponse struct {
+type ListSitesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON201      *[]Gtext
+	JSON200      *[]Site
 	JSONDefault  *Error
 }
 
 // Status returns HTTPResponse.Status
-func (r AddGtextResponse) Status() string {
+func (r ListSitesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1112,30 +1411,7 @@ func (r AddGtextResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r AddGtextResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ListGtextsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]Gtext
-	JSONDefault  *Error
-}
-
-// Status returns HTTPResponse.Status
-func (r ListGtextsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListGtextsResponse) StatusCode() int {
+func (r ListSitesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1165,15 +1441,14 @@ func (r AddSiteResponse) StatusCode() int {
 	return 0
 }
 
-type ListSitesResponse struct {
+type UpdateSiteResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]Site
 	JSONDefault  *Error
 }
 
 // Status returns HTTPResponse.Status
-func (r ListSitesResponse) Status() string {
+func (r UpdateSiteResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1181,7 +1456,97 @@ func (r ListSitesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListSitesResponse) StatusCode() int {
+func (r UpdateSiteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListGtextsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]Gtext
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r ListGtextsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListGtextsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type AddGtextResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *[]Gtext
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r AddGtextResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddGtextResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateGtextResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateGtextResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateGtextResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DelAnyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r DelAnyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DelAnyResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1222,6 +1587,15 @@ func (c *ClientWithResponses) CreateUserWithResponse(ctx context.Context, body C
 	return ParseCreateUserResponse(rsp)
 }
 
+// ListCardsWithResponse request returning *ListCardsResponse
+func (c *ClientWithResponses) ListCardsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCardsResponse, error) {
+	rsp, err := c.ListCards(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListCardsResponse(rsp)
+}
+
 // AddCardWithBodyWithResponse request with arbitrary body returning *AddCardResponse
 func (c *ClientWithResponses) AddCardWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddCardResponse, error) {
 	rsp, err := c.AddCardWithBody(ctx, contentType, body, reqEditors...)
@@ -1239,22 +1613,21 @@ func (c *ClientWithResponses) AddCardWithResponse(ctx context.Context, body AddC
 	return ParseAddCardResponse(rsp)
 }
 
-// ListCardsWithResponse request returning *ListCardsResponse
-func (c *ClientWithResponses) ListCardsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCardsResponse, error) {
-	rsp, err := c.ListCards(ctx, reqEditors...)
+// UpdateCardWithBodyWithResponse request with arbitrary body returning *UpdateCardResponse
+func (c *ClientWithResponses) UpdateCardWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCardResponse, error) {
+	rsp, err := c.UpdateCardWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListCardsResponse(rsp)
+	return ParseUpdateCardResponse(rsp)
 }
 
-// AddGfileWithBodyWithResponse request with arbitrary body returning *AddGfileResponse
-func (c *ClientWithResponses) AddGfileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGfileResponse, error) {
-	rsp, err := c.AddGfileWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateCardWithResponse(ctx context.Context, body UpdateCardJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCardResponse, error) {
+	rsp, err := c.UpdateCard(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseAddGfileResponse(rsp)
+	return ParseUpdateCardResponse(rsp)
 }
 
 // ListGfilesWithResponse request returning *ListGfilesResponse
@@ -1266,6 +1639,15 @@ func (c *ClientWithResponses) ListGfilesWithResponse(ctx context.Context, reqEdi
 	return ParseListGfilesResponse(rsp)
 }
 
+// AddGfileWithBodyWithResponse request with arbitrary body returning *AddGfileResponse
+func (c *ClientWithResponses) AddGfileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGfileResponse, error) {
+	rsp, err := c.AddGfileWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddGfileResponse(rsp)
+}
+
 // GetGfileWithResponse request returning *GetGfileResponse
 func (c *ClientWithResponses) GetGfileWithResponse(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*GetGfileResponse, error) {
 	rsp, err := c.GetGfile(ctx, fileID, reqEditors...)
@@ -1275,30 +1657,13 @@ func (c *ClientWithResponses) GetGfileWithResponse(ctx context.Context, fileID s
 	return ParseGetGfileResponse(rsp)
 }
 
-// AddGtextWithBodyWithResponse request with arbitrary body returning *AddGtextResponse
-func (c *ClientWithResponses) AddGtextWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGtextResponse, error) {
-	rsp, err := c.AddGtextWithBody(ctx, contentType, body, reqEditors...)
+// ListSitesWithResponse request returning *ListSitesResponse
+func (c *ClientWithResponses) ListSitesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSitesResponse, error) {
+	rsp, err := c.ListSites(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseAddGtextResponse(rsp)
-}
-
-func (c *ClientWithResponses) AddGtextWithResponse(ctx context.Context, body AddGtextJSONRequestBody, reqEditors ...RequestEditorFn) (*AddGtextResponse, error) {
-	rsp, err := c.AddGtext(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAddGtextResponse(rsp)
-}
-
-// ListGtextsWithResponse request returning *ListGtextsResponse
-func (c *ClientWithResponses) ListGtextsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListGtextsResponse, error) {
-	rsp, err := c.ListGtexts(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListGtextsResponse(rsp)
+	return ParseListSitesResponse(rsp)
 }
 
 // AddSiteWithBodyWithResponse request with arbitrary body returning *AddSiteResponse
@@ -1318,13 +1683,73 @@ func (c *ClientWithResponses) AddSiteWithResponse(ctx context.Context, body AddS
 	return ParseAddSiteResponse(rsp)
 }
 
-// ListSitesWithResponse request returning *ListSitesResponse
-func (c *ClientWithResponses) ListSitesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSitesResponse, error) {
-	rsp, err := c.ListSites(ctx, reqEditors...)
+// UpdateSiteWithBodyWithResponse request with arbitrary body returning *UpdateSiteResponse
+func (c *ClientWithResponses) UpdateSiteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSiteResponse, error) {
+	rsp, err := c.UpdateSiteWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListSitesResponse(rsp)
+	return ParseUpdateSiteResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateSiteWithResponse(ctx context.Context, body UpdateSiteJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSiteResponse, error) {
+	rsp, err := c.UpdateSite(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSiteResponse(rsp)
+}
+
+// ListGtextsWithResponse request returning *ListGtextsResponse
+func (c *ClientWithResponses) ListGtextsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListGtextsResponse, error) {
+	rsp, err := c.ListGtexts(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListGtextsResponse(rsp)
+}
+
+// AddGtextWithBodyWithResponse request with arbitrary body returning *AddGtextResponse
+func (c *ClientWithResponses) AddGtextWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGtextResponse, error) {
+	rsp, err := c.AddGtextWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddGtextResponse(rsp)
+}
+
+func (c *ClientWithResponses) AddGtextWithResponse(ctx context.Context, body AddGtextJSONRequestBody, reqEditors ...RequestEditorFn) (*AddGtextResponse, error) {
+	rsp, err := c.AddGtext(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddGtextResponse(rsp)
+}
+
+// UpdateGtextWithBodyWithResponse request with arbitrary body returning *UpdateGtextResponse
+func (c *ClientWithResponses) UpdateGtextWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateGtextResponse, error) {
+	rsp, err := c.UpdateGtextWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateGtextResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateGtextWithResponse(ctx context.Context, body UpdateGtextJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateGtextResponse, error) {
+	rsp, err := c.UpdateGtext(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateGtextResponse(rsp)
+}
+
+// DelAnyWithResponse request returning *DelAnyResponse
+func (c *ClientWithResponses) DelAnyWithResponse(ctx context.Context, secretID string, reqEditors ...RequestEditorFn) (*DelAnyResponse, error) {
+	rsp, err := c.DelAny(ctx, secretID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDelAnyResponse(rsp)
 }
 
 // ParseLoginResponse parses an HTTP response from a LoginWithResponse call
@@ -1379,6 +1804,32 @@ func ParseCreateUserResponse(rsp *http.Response) (*CreateUserResponse, error) {
 	return response, nil
 }
 
+// ParseListCardsResponse parses an HTTP response from a ListCardsWithResponse call
+func ParseListCardsResponse(rsp *http.Response) (*ListCardsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListCardsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []Card
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseAddCardResponse parses an HTTP response from a AddCardWithResponse call
 func ParseAddCardResponse(rsp *http.Response) (*AddCardResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -1412,53 +1863,20 @@ func ParseAddCardResponse(rsp *http.Response) (*AddCardResponse, error) {
 	return response, nil
 }
 
-// ParseListCardsResponse parses an HTTP response from a ListCardsWithResponse call
-func ParseListCardsResponse(rsp *http.Response) (*ListCardsResponse, error) {
+// ParseUpdateCardResponse parses an HTTP response from a UpdateCardWithResponse call
+func ParseUpdateCardResponse(rsp *http.Response) (*UpdateCardResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListCardsResponse{
+	response := &UpdateCardResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []Card
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseAddGfileResponse parses an HTTP response from a AddGfileWithResponse call
-func ParseAddGfileResponse(rsp *http.Response) (*AddGfileResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &AddGfileResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest []Gfile
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -1504,6 +1922,39 @@ func ParseListGfilesResponse(rsp *http.Response) (*ListGfilesResponse, error) {
 	return response, nil
 }
 
+// ParseAddGfileResponse parses an HTTP response from a AddGfileWithResponse call
+func ParseAddGfileResponse(rsp *http.Response) (*AddGfileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddGfileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest []Gfile
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetGfileResponse parses an HTTP response from a GetGfileWithResponse call
 func ParseGetGfileResponse(rsp *http.Response) (*GetGfileResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -1530,55 +1981,22 @@ func ParseGetGfileResponse(rsp *http.Response) (*GetGfileResponse, error) {
 	return response, nil
 }
 
-// ParseAddGtextResponse parses an HTTP response from a AddGtextWithResponse call
-func ParseAddGtextResponse(rsp *http.Response) (*AddGtextResponse, error) {
+// ParseListSitesResponse parses an HTTP response from a ListSitesWithResponse call
+func ParseListSitesResponse(rsp *http.Response) (*ListSitesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &AddGtextResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest []Gtext
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListGtextsResponse parses an HTTP response from a ListGtextsWithResponse call
-func ParseListGtextsResponse(rsp *http.Response) (*ListGtextsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListGtextsResponse{
+	response := &ListSitesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []Gtext
+		var dest []Site
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -1629,27 +2047,138 @@ func ParseAddSiteResponse(rsp *http.Response) (*AddSiteResponse, error) {
 	return response, nil
 }
 
-// ParseListSitesResponse parses an HTTP response from a ListSitesWithResponse call
-func ParseListSitesResponse(rsp *http.Response) (*ListSitesResponse, error) {
+// ParseUpdateSiteResponse parses an HTTP response from a UpdateSiteWithResponse call
+func ParseUpdateSiteResponse(rsp *http.Response) (*UpdateSiteResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListSitesResponse{
+	response := &UpdateSiteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListGtextsResponse parses an HTTP response from a ListGtextsWithResponse call
+func ParseListGtextsResponse(rsp *http.Response) (*ListGtextsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListGtextsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []Site
+		var dest []Gtext
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAddGtextResponse parses an HTTP response from a AddGtextWithResponse call
+func ParseAddGtextResponse(rsp *http.Response) (*AddGtextResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddGtextResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest []Gtext
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateGtextResponse parses an HTTP response from a UpdateGtextWithResponse call
+func ParseUpdateGtextResponse(rsp *http.Response) (*UpdateGtextResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateGtextResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDelAnyResponse parses an HTTP response from a DelAnyWithResponse call
+func ParseDelAnyResponse(rsp *http.Response) (*DelAnyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DelAnyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

@@ -28,14 +28,15 @@ func (g Gfile) Description() string {
 func (g Gfile) FilterValue() string { return g.Definition }
 
 type GfileList struct {
-	list list.Model
+	list  list.Model
+	fPath string
 }
 
 // List saved Gfile credentials.
-func NewGfileList() *GfileList {
+func NewGfileList(path string) *GfileList {
 	// Create empty list items
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
-	l.Title = "My secret files."
+	l.Title = fmt.Sprintf("<Insert> - download selected file to folder:  %s.", path)
 	cl := GfileList{list: l}
 	// Fix terminal bag.
 	tw, th, _ := term.GetSize(int(os.Stdout.Fd()))
@@ -46,7 +47,7 @@ func NewGfileList() *GfileList {
 
 // Init is the first function that wisl be casled. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (sl *GfileList) GetInit() tea.Cmd {
+func (sl *GfileList) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return nil
 }
 
@@ -55,13 +56,14 @@ func (sl *GfileList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+q", "esc":
-			m.ChangeState(tui.GfileList, tui.GfileMenu)
+			sl.list.ResetSelected()
+			m.ChangeState(tui.GfileList, tui.GfileMenu, false, nil)
 			return m, nil
 		case "enter":
-			zap.S().Infoln(sl.list.SelectedItem())
 			return m, nil
+
 		case "insert":
-			zap.S().Infoln(client.GfileGet(m.Client, m.JWT, sl.list.SelectedItem().(Gfile).GfileID, sl.list.SelectedItem().(Gfile).Fname))
+			zap.S().Infoln(client.GfileGet(m.Client, m.Conf, m.JWT, sl.list.SelectedItem().(Gfile).GfileID, sl.list.SelectedItem().(Gfile).Fname))
 			return m, nil
 		}
 
@@ -80,10 +82,17 @@ func (sl *GfileList) GetView(m *tui.Model) string {
 	// Load Gfiles from memory
 	listItems := []list.Item{}
 	for _, file := range m.Gfile {
-		item := Gfile{GfileID: file.GfileID, StorageID: file.StorageID, Definition: file.Definition, Fname: file.Fname}
+		item := Gfile{GfileID: file.GfileID, Definition: file.Definition, Fname: file.Fname}
 		listItems = append(listItems, item)
 	}
 	sl.list.SetItems(listItems)
+
+	// b.WriteString(styles.ListStyle.Render(sl.list.View()))
+	// b.WriteString("\n\n")
+	// b.WriteString(styles.HelpStyle.Render()
+
+	// str := b.String()
+	// b.Reset()
 
 	return styles.ListStyle.Render(sl.list.View())
 }

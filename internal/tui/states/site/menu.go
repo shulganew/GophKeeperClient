@@ -10,31 +10,31 @@ import (
 )
 
 // Implemet State.
-var _ tui.State = (*LoginMenu)(nil)
+var _ tui.State = (*SiteMenu)(nil)
 
 // Main site's login and password administration, state 4
-type LoginMenu struct {
+type SiteMenu struct {
 	Choices []string
 	Choice  int
 }
 
-func NewSietMenu() *LoginMenu {
-	return &LoginMenu{Choices: []string{"List logins/pw", "Add NEW"}}
+func NewSietMenu() *SiteMenu {
+	return &SiteMenu{Choices: []string{"List/update/delete logins/pw", "Add NEW"}}
 }
 
 // Init is the first function that will be called. It returns an optional
 // initial colmand. To not perform an initial colmand return nil.
-func (lm *LoginMenu) GetInit() tea.Cmd {
+func (lm *SiteMenu) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return nil
 }
 
 // Main update function.
-func (lm *LoginMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func (lm *SiteMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
-			m.ChangeState(tui.SiteMenu, tui.MainMenu)
+			m.ChangeState(tui.SiteMenu, tui.MainMenu, false, nil)
 		case "down":
 			lm.Choice++
 			if lm.Choice > len(lm.Choices)-1 {
@@ -51,10 +51,10 @@ func (lm *LoginMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch lm.Choice {
 			// List logins/pw.
 			case 0:
-				m.ChangeState(tui.SiteMenu, tui.SiteList)
+				m.ChangeState(tui.SiteMenu, tui.SiteList, false, nil)
 			// Add NEW.
 			case 1:
-				m.ChangeState(tui.SiteMenu, tui.SiteAdd)
+				m.ChangeState(tui.SiteMenu, tui.SiteAdd, false, nil)
 			}
 			return m, nil
 		}
@@ -63,7 +63,7 @@ func (lm *LoginMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // The main view, which just calls the appropriate sub-view
-func (lm *LoginMenu) GetView(m *tui.Model) string {
+func (lm *SiteMenu) GetView(m *tui.Model) string {
 	s := strings.Builder{}
 	s.WriteString(states.GetHeaderView())
 
@@ -76,7 +76,7 @@ func (lm *LoginMenu) GetView(m *tui.Model) string {
 // Method for working with views/
 //
 // Choosing menu.
-func (lm *LoginMenu) choicesRegister(m *tui.Model) string {
+func (lm *SiteMenu) choicesRegister(m *tui.Model) string {
 	s := strings.Builder{}
 	s.WriteString("\n")
 	s.WriteString(styles.GopherQuestion.Render(m.User.Login, ", yours site's logins and passw:"))

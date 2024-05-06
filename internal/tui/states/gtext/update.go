@@ -1,6 +1,7 @@
 package gtext
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -14,28 +15,26 @@ import (
 	"go.uber.org/zap"
 )
 
-type errMsg error
-
 // Implemet State.
-var _ tui.State = (*GtextAdd)(nil)
+var _ tui.State = (*GtextUpdate)(nil)
 
-// GtextAdd, state
-type GtextAdd struct {
+// GtextUpdate, state
+type GtextUpdate struct {
 	textarea    textarea.Model
+	updateID    string
 	err         error
 	ansver      bool  // Add info message if servier send answer.
 	IsAddOk     bool  // Successful registration.
 	ansverCode  int   // Servier answer code.
 	ansverError error // Servier answer error.
-
 }
 
-func NewGtextAdd() *GtextAdd {
+func NewGtextUpdate() *GtextUpdate {
 	ti := textarea.New()
 	ti.Placeholder = "Once upon a time..."
 	ti.Focus()
 
-	return &GtextAdd{
+	return &GtextUpdate{
 		textarea: ti,
 		err:      nil,
 	}
@@ -43,11 +42,20 @@ func NewGtextAdd() *GtextAdd {
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (ga *GtextAdd) GetInit(m *tui.Model, updateID *string) tea.Cmd {
+func (ga *GtextUpdate) GetInit(m *tui.Model, updateID *string) tea.Cmd {
+	if updateID != nil {
+		ga.updateID = *updateID
+	} else {
+		ga.ansver = true
+		ga.ansverError = errors.New("can't find update id")
+	}
+	// Init fields.
+	gtext := m.Gtext[ga.updateID]
+	ga.textarea.SetValue(gtext.Note)
 	return textinput.Blink
 }
 
-func (ga *GtextAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func (ga *GtextUpdate) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
@@ -59,7 +67,7 @@ func (ga *GtextAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if ga.IsAddOk {
 				ga.cleanform()
-				m.ChangeState(tui.GtextAdd, tui.GtextMenu, false, nil)
+				m.ChangeState(tui.GtextUpdate, tui.GtextMenu, false, nil)
 				return m, nil
 			}
 		case "ctrl+d":
@@ -67,16 +75,16 @@ func (ga *GtextAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+s":
 			if ga.IsAddOk {
 				ga.cleanform()
-				m.ChangeState(tui.GtextAdd, tui.GtextMenu, false, nil)
+				m.ChangeState(tui.GtextUpdate, tui.GtextMenu, false, nil)
 				return m, nil
 			}
 
 			zap.S().Infof("Text  %s", ga.textarea.Value())
-			_, status, err := client.GtextAdd(m.Client, m.Conf, m.JWT, ga.textarea.Value())
+			status, err := client.GtextUpdate(m.Client, m.Conf, m.JWT, ga.updateID, ga.textarea.Value())
 			ga.ansver = true
 			ga.ansverCode = status
 			ga.ansverError = err
-			if status == http.StatusCreated {
+			if status == http.StatusOK {
 				ga.IsAddOk = true
 				return m, nil
 			}
@@ -86,7 +94,7 @@ func (ga *GtextAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "ctrl+c", "esc":
 			ga.cleanform()
-			m.ChangeState(tui.GtextAdd, tui.GtextMenu, false, nil)
+			m.ChangeState(tui.GtextUpdate, tui.GtextMenu, false, nil)
 			return m, nil
 		}
 
@@ -102,13 +110,13 @@ func (ga *GtextAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // The main view, which just calls the appropriate sub-view
-func (ga *GtextAdd) GetView(m *tui.Model) string {
+func (ga *GtextUpdate) GetView(m *tui.Model) string {
 	b := strings.Builder{}
 	b.WriteString("Enter your secret note:\n\n")
 	b.WriteString(ga.textarea.View())
 	// Client answer checking.
 	if ga.ansver {
-		if ga.ansverCode == http.StatusCreated {
+		if ga.ansverCode == http.StatusOK {
 			b.WriteString("\n\n")
 			b.WriteString(styles.OkStyle1.Render("Note added!"))
 			b.WriteString("\n\n")
@@ -137,7 +145,7 @@ func (ga *GtextAdd) GetView(m *tui.Model) string {
 }
 
 // Reset all inputs and form errors.
-func (ga *GtextAdd) cleanform() {
+func (ga *GtextUpdate) cleanform() {
 	ga.ansver = false
 	ga.IsAddOk = false
 	ga.ansverCode = 0

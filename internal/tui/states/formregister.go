@@ -69,7 +69,7 @@ func NewRegisterForm() *RegisterForm {
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (rf *RegisterForm) GetInit() tea.Cmd {
+func (rf *RegisterForm) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return textinput.Blink
 }
 
@@ -80,10 +80,10 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 		case "ctrl+c", "esc":
 			rf.cleanform()
 			if m.IsUserLogedIn {
-				m.ChangeState(tui.RegisterForm, tui.MainMenu)
+				m.ChangeState(tui.RegisterForm, tui.MainMenu, false, nil)
 				return m, nil
 			}
-			m.ChangeState(tui.RegisterForm, tui.NotLoginMenu)
+			m.ChangeState(tui.RegisterForm, tui.NotLoginMenu, false, nil)
 			return m, nil
 		case "insert":
 			// Hide or show password.
@@ -102,7 +102,7 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 			// If user registration done, enter for continue...
 			if rf.IsRegOk {
 				rf.cleanform()
-				m.ChangeState(tui.RegisterForm, tui.MainMenu)
+				m.ChangeState(tui.RegisterForm, tui.MainMenu, false, nil)
 				return m, nil
 			}
 			// Submit button pressed!

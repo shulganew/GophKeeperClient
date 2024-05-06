@@ -37,7 +37,7 @@ func CardAdd(c *oapi.Client, conf config.Config, jwt, def, ccn, cvv, exp, hld st
 }
 
 // Retrive all cards credentials from the server.
-func CardsList(c *oapi.Client, conf config.Config, jwt string) (cards []oapi.Card, status int, err error) {
+func CardsList(c *oapi.Client, conf config.Config, jwt string) (cards map[string]oapi.Card, status int, err error) {
 
 	// Create OAPI card object.
 	resp, err := c.ListCards(context.TODO(), func(ctx context.Context, req *http.Request) error {
@@ -64,4 +64,21 @@ func CardsList(c *oapi.Client, conf config.Config, jwt string) (cards []oapi.Car
 		}
 	}
 	return cards, resp.StatusCode, nil
+}
+
+// Update card by id.
+func CardsUpdate(c *oapi.Client, conf config.Config, jwt string, cardID, def, ccn, cvv, exp, hld string) (status int, err error) {
+	// Create OAPI card object.
+	card := &oapi.Card{CardID: cardID, Definition: def, Ccn: ccn, Cvv: cvv, Exp: exp, Hld: hld}
+	resp, err := c.UpdateCard(context.TODO(), *card, func(ctx context.Context, req *http.Request) error {
+		req.Header.Add("Authorization", config.AuthPrefix+jwt)
+		return nil
+	})
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
+
+	return resp.StatusCode, nil
 }

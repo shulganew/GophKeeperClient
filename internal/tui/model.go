@@ -43,7 +43,7 @@ const SiteList = 5
 // Add site's logins and passwords.
 const SiteAdd = 6
 
-// TODO
+// Update Site
 const SiteUpdate = 7
 
 // Card menu.
@@ -55,30 +55,33 @@ const CardAdd = 9
 // List credit card.
 const CardList = 10
 
-// List credit card. //TODO
-//const CardUpdate = 11
+// Update cards
+const CardUpdate = 11
 
 // Goph text menu.
-const GtextMenu = 11
+const GtextMenu = 12
 
 // Add Goph text.
-const GtextAdd = 12
+const GtextAdd = 13
 
 // List Goph text.
-const GtextList = 13
+const GtextList = 14
+
+// List Goph text.
+const GtextUpdate = 15
 
 // Goph file menu.
-const GfileMenu = 14
+const GfileMenu = 16
 
 // Add file.
-const GfileAdd = 15
+const GfileAdd = 17
 
 // List files.
-const GfileList = 16
+const GfileList = 18
 
 // Interface for all states selection.
 type State interface {
-	GetInit() tea.Cmd
+	GetInit(m *Model, updateID *string) tea.Cmd
 	GetUpdate(*Model, tea.Msg) (tea.Model, tea.Cmd)
 	GetView(*Model) string
 }
@@ -93,16 +96,18 @@ type Model struct {
 	CurrentState  int
 	PreviousState int
 	States        []State
-	Sites         []oapi.Site  // Memory storage of Site data.
-	Cards         []oapi.Card  // Memory storage of Cards data.
-	Gtext         []oapi.Gtext // Memory storage of Text data.
-	Gfile         []oapi.Gfile // Memory storage of Files metadata.
+	Sites         map[string]oapi.Site  // Memory storage of Site data. SiteID - key
+	Cards         map[string]oapi.Card  // Memory storage of Cards data. cardID - key
+	Gtext         map[string]oapi.Gtext // Memory storage of Text data. gtextID - key
+	Gfile         map[string]oapi.Gfile // Memory storage of Files metadata. fileID - key
+	IsUpdate      bool                  // Use for mark update states during state switching
+	UpdateID      *string               // updateID = siteID or cardID or gtextID depends on update.
 }
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
 func (m Model) Init() tea.Cmd {
-	return m.States[m.CurrentState].GetInit()
+	return m.States[m.CurrentState].GetInit(&m, nil)
 }
 
 // Main update function.
@@ -116,10 +121,23 @@ func (m Model) View() string {
 	return m.States[m.CurrentState].GetView(&m)
 }
 
-// State switcher.
-func (m *Model) ChangeState(current, next int) {
+// State switcher. If state moves to update, it sent bool value and update string id. updateID = siteID or cardID or gtextID depends on update.
+func (m *Model) ChangeState(current, next int, isUpdate bool, updateID *string) {
 	m.CurrentState = next
 	m.PreviousState = current
+
+	// Init current state
+
+	// Check update parameters for values.
+	if isUpdate && updateID != nil {
+		m.IsUpdate = true
+		m.UpdateID = updateID
+		// Init updateID and secret type
+		m.States[m.CurrentState].GetInit(m, updateID)
+	} else {
+		m.IsUpdate = false
+		m.UpdateID = nil
+	}
 
 	// Preloading data to memory model.
 	switch m.CurrentState {
@@ -175,21 +193,21 @@ func (m *Model) ChangeState(current, next int) {
 }
 
 // Set size, used for interface conformance save.
-func (m *Model) SetSites(sites []oapi.Site) {
+func (m *Model) SetSites(sites map[string]oapi.Site) {
 	m.Sites = sites
 }
 
 // Set size, used for interface conformance save.
-func (m *Model) SetCards(cards []oapi.Card) {
+func (m *Model) SetCards(cards map[string]oapi.Card) {
 	m.Cards = cards
 }
 
 // Set size, used for interface conformance save.
-func (m *Model) SetGtext(gtexts []oapi.Gtext) {
+func (m *Model) SetGtext(gtexts map[string]oapi.Gtext) {
 	m.Gtext = gtexts
 }
 
 // Set size, used for interface conformance save.
-func (m *Model) SetGfile(gfiles []oapi.Gfile) {
+func (m *Model) SetGfile(gfiles map[string]oapi.Gfile) {
 	m.Gfile = gfiles
 }

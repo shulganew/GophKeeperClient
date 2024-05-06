@@ -98,24 +98,26 @@ func InitModel(conf config.Config) tea.Model {
 	// Add site's login and passwords 6
 	al6 := site.NewSiteAdd()
 
-	siteU7 := states.NewMainMenu() // Site edit reserved
+	siteU7 := site.NewSiteUpdate()
 	// Card menu
 	cm8 := card.NewCardMenu()
 	ca9 := card.NewCardAdd()
 	cl10 := card.NewCardList()
+	cu11 := card.NewCardUpdate()
 
 	// Text menu
-	mg11 := gtext.NewGtextMenu()
-	gta12 := gtext.NewGtextAdd()
-	gtl13 := gtext.NewGtextList()
+	mg12 := gtext.NewGtextMenu()
+	gta13 := gtext.NewGtextAdd()
+	gtl14 := gtext.NewGtextList()
+	gtup15 := gtext.NewGtextUpdate()
 
 	// Text menu
-	gm14 := gfile.NewGfileMenu()
-	gm15 := gfile.NewFileAdd()
-	gtl16 := gfile.NewGfileList()
+	gm16 := gfile.NewGfileMenu()
+	gm17 := gfile.NewFileAdd()
+	gtl18 := gfile.NewGfileList(conf.FileSavingPath)
 
 	// TODO make transfer object and Model constructor
-	states := []tui.State{nl0, lf1, rf2, mm3, lm4, sl5, al6, siteU7, cm8, ca9, cl10, mg11, gta12, gtl13, gm14, gm15, gtl16}
+	states := []tui.State{nl0, lf1, rf2, mm3, lm4, sl5, al6, siteU7, cm8, ca9, cl10, cu11, mg12, gta13, gtl14, gtup15, gm16, gm17, gtl18}
 	return tui.Model{Conf: conf, Client: c, User: &user.NewUser, JWT: user.JWT, CurrentState: cSate, States: states}
 }
 

@@ -61,7 +61,7 @@ func NewFileAdd() *FileAdd {
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (rf *FileAdd) GetInit() tea.Cmd {
+func (rf *FileAdd) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return textinput.Blink
 }
 
@@ -72,10 +72,10 @@ func (rf *FileAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "esc":
 			rf.cleanform()
 			if m.IsUserLogedIn {
-				m.ChangeState(tui.GfileAdd, tui.NotLoginMenu)
+				m.ChangeState(tui.GfileAdd, tui.NotLoginMenu, false, nil)
 				return m, nil
 			}
-			m.ChangeState(tui.GfileAdd, tui.GfileMenu)
+			m.ChangeState(tui.GfileAdd, tui.GfileMenu, false, nil)
 			return m, nil
 
 		case "tab", "shift+tab", "enter", "up", "down":
@@ -85,7 +85,7 @@ func (rf *FileAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			// If user adding done success, enter for continue...
 			if rf.IsAddOk {
 				rf.cleanform()
-				m.ChangeState(tui.GfileAdd, tui.GfileMenu)
+				m.ChangeState(tui.GfileAdd, tui.GfileMenu, false, nil)
 				return m, nil
 			}
 			// Submit button pressed!

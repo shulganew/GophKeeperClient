@@ -2,10 +2,12 @@ package card
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/shulganew/GophKeeperClient/internal/client"
 	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/styles"
@@ -35,7 +37,7 @@ type CardList struct {
 func NewCardList() *CardList {
 	// Create empty list items
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
-	l.Title = "My bank cards."
+	l.Title = "My bank cards. <ctrl+u> - update, <ctrl+d> - delete"
 	cl := CardList{list: l}
 	// Fix terminal bag.
 	tw, th, _ := term.GetSize(int(os.Stdout.Fd()))
@@ -46,7 +48,7 @@ func NewCardList() *CardList {
 
 // Init is the first function that wisl be casled. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (sl *CardList) GetInit() tea.Cmd {
+func (sl *CardList) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return nil
 }
 
@@ -55,11 +57,24 @@ func (sl *CardList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
-			m.ChangeState(tui.CardList, tui.CardMenu)
+			m.ChangeState(tui.CardList, tui.CardMenu, false, nil)
+			return m, nil
+		case "ctrl+u":
+			cardID := sl.list.SelectedItem().(Card).CardID
+			m.ChangeState(tui.CardList, tui.CardUpdate, true, &cardID)
+			return m, nil
+		case "ctrl+d":
+			cardID := sl.list.SelectedItem().(Card).CardID
+			// Delete card.
+			status, err := client.Delete(m.Client, m.Conf, m.JWT, cardID)
+			if err == nil && status == http.StatusOK {
+				delete(m.Cards, cardID)
+			}
 			return m, nil
 		case "enter":
 			zap.S().Infoln(sl.list.SelectedItem().(Card).CardID)
 			return m, nil
+
 		}
 
 	case tea.WindowSizeMsg:

@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
 	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
@@ -80,7 +81,7 @@ func FileAdd(c *oapi.Client, conf config.Config, jwt, def, fPath string) (status
 	}
 
 	// Create file
-	nfile := oapi.NewGfile{Definition: def, Fname: file.Name()}
+	nfile := oapi.NewGfile{Definition: def, Fname: filepath.Base(file.Name())}
 
 	// Encode nfile as metadata to binary
 	var md bytes.Buffer
@@ -90,11 +91,10 @@ func FileAdd(c *oapi.Client, conf config.Config, jwt, def, fPath string) (status
 	}
 
 	metadata := md.Bytes()
-	zap.S().Infoln("metadata", metadata)
 	// Write preambule - size of newGfile object (metadata).
 	p := make([]byte, PreambleLeth)
 	mLen := uint64(len(metadata))
-	zap.S().Infoln("Metadata length: ", mLen)
+	zap.S().Debugln("Metadata length: ", mLen)
 	binary.LittleEndian.PutUint64(p, mLen)
 
 	ur := NewUploadReader(file, p, metadata)
@@ -103,6 +103,7 @@ func FileAdd(c *oapi.Client, conf config.Config, jwt, def, fPath string) (status
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)
 		return nil
 	})
+
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -119,11 +120,10 @@ func FileAdd(c *oapi.Client, conf config.Config, jwt, def, fPath string) (status
 	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
 
 	// Get JWT token and save to User
-
 	return resp.StatusCode, nil
 }
 
-func GfileList(c *oapi.Client, conf config.Config, jwt string) (gfiles []oapi.Gfile, status int, err error) {
+func GfileList(c *oapi.Client, conf config.Config, jwt string) (gfiles map[string]oapi.Gfile, status int, err error) {
 	// Create OAPI gfile object.
 	resp, err := c.ListGfiles(context.TODO(), func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)
@@ -151,7 +151,7 @@ func GfileList(c *oapi.Client, conf config.Config, jwt string) (gfiles []oapi.Gf
 	return gfiles, resp.StatusCode, nil
 }
 
-func GfileGet(c *oapi.Client, jwt string, fileID, fileName string) (downloaded bool, status int, err error) {
+func GfileGet(c *oapi.Client, conf config.Config, jwt string, fileID, fileName string) (downloaded bool, status int, err error) {
 	// Get file.
 	resp, err := c.GetGfile(context.TODO(), fileID, func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)
@@ -161,7 +161,7 @@ func GfileGet(c *oapi.Client, jwt string, fileID, fileName string) (downloaded b
 		return false, http.StatusInternalServerError, err
 	}
 	// Create file
-	file, err := os.Create(fileName)
+	file, err := os.Create(filepath.Join(conf.FileSavingPath, fileName))
 	defer func() {
 		if err := file.Close(); err != nil {
 			zap.S().Errorln("Can't close file: ", err)

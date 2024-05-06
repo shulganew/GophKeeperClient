@@ -12,7 +12,7 @@ const DotChar = " • "
 var (
 	// Meny (Status 0)
 	SubtleStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-	CheckboxStyleSelected = lipgloss.NewStyle().MarginLeft(3).Foreground(lipgloss.Color("#FDDD00"))
+	CheckboxStyleSelected = lipgloss.NewStyle().MarginLeft(3).Foreground(lipgloss.Color("#000DDD"))
 	CheckboxStyle         = lipgloss.NewStyle().MarginLeft(3).Foreground(lipgloss.Color("#00A29C"))
 	GopherHeader          = lipgloss.NewStyle().MarginLeft(5).Foreground(lipgloss.Color("#00ADD8"))
 	GopherQuestion        = lipgloss.NewStyle().Foreground(lipgloss.Color("#5DC9E2"))

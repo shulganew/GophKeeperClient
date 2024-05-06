@@ -2,10 +2,12 @@ package site
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/shulganew/GophKeeperClient/internal/client"
 	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/styles"
@@ -35,7 +37,7 @@ type SiteList struct {
 func NewSiteList() *SiteList {
 	// Create empty list items
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
-	l.Title = "Sites login and passowrds."
+	l.Title = "Sites login and passowrds. <ctrl+u> - update, <ctrl+d> - delete"
 	sl := SiteList{list: l}
 	// Fix terminal bag.
 	tw, th, _ := term.GetSize(int(os.Stdout.Fd()))
@@ -46,7 +48,7 @@ func NewSiteList() *SiteList {
 
 // Init is the first function that wisl be casled. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (sl *SiteList) GetInit() tea.Cmd {
+func (sl *SiteList) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return nil
 }
 
@@ -55,7 +57,19 @@ func (sl *SiteList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
-			m.ChangeState(tui.SiteList, tui.MainMenu)
+			m.ChangeState(tui.SiteList, tui.MainMenu, false, nil)
+			return m, nil
+		case "ctrl+u":
+			siteID := sl.list.SelectedItem().(Site).SiteID
+			m.ChangeState(tui.SiteList, tui.SiteUpdate, true, &siteID)
+			return m, nil
+		case "ctrl+d":
+			siteID := sl.list.SelectedItem().(Site).SiteID
+			// Delete site.
+			status, err := client.Delete(m.Client, m.Conf, m.JWT, siteID)
+			if err == nil && status == http.StatusOK {
+				delete(m.Sites, siteID)
+			}
 			return m, nil
 		case "enter":
 			zap.S().Infoln(sl.list.SelectedItem())

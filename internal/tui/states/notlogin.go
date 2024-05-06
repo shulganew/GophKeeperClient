@@ -24,7 +24,7 @@ func NewNotLogin() *NotLogin {
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (nl *NotLogin) GetInit() tea.Cmd {
+func (nl *NotLogin) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return nil
 }
 
@@ -72,10 +72,10 @@ func (nl *NotLogin) updateChoices(m *tui.Model, msg tea.Msg) {
 			switch nl.Choice {
 			// Log in
 			case 0:
-				m.ChangeState(tui.NotLoginMenu, tui.LoginForm)
+				m.ChangeState(tui.NotLoginMenu, tui.LoginForm, false, nil)
 				// Sign up
 			case 1:
-				m.ChangeState(tui.NotLoginMenu, tui.RegisterForm)
+				m.ChangeState(tui.NotLoginMenu, tui.RegisterForm, false, nil)
 			}
 
 		}

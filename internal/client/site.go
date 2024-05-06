@@ -35,7 +35,7 @@ func SiteAdd(c *oapi.Client, conf config.Config, jwt, def, siteURL, slogin, spw 
 }
 
 // Retrive all sites credentials from the server.
-func SiteList(c *oapi.Client, conf config.Config, jwt string) (sites []oapi.Site, status int, err error) {
+func SiteList(c *oapi.Client, conf config.Config, jwt string) (sites map[string]oapi.Site, status int, err error) {
 	// Create OAPI site object.
 	resp, err := c.ListSites(context.TODO(), func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)
@@ -64,3 +64,22 @@ func SiteList(c *oapi.Client, conf config.Config, jwt string) (sites []oapi.Site
 
 	return sites, resp.StatusCode, nil
 }
+
+// Site update by id.
+func SiteUpdate(c *oapi.Client, conf config.Config, jwt string, siteID, def, siteURL, slogin, spw string) (status int, err error) {
+	// Create OAPI site object.
+	site := &oapi.Site{SiteID: siteID, Definition: def, Site: siteURL, Slogin: slogin, Spw: spw}
+	resp, err := c.UpdateSite(context.TODO(), *site, func(ctx context.Context, req *http.Request) error {
+		req.Header.Add("Authorization", config.AuthPrefix+jwt)
+		return nil
+	})
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
+
+	return resp.StatusCode, nil
+}
+
+

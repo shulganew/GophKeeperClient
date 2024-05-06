@@ -1,9 +1,9 @@
 package card
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -15,13 +15,14 @@ import (
 )
 
 // Implemet State.
-var _ tui.State = (*CardAdd)(nil)
+var _ tui.State = (*CardUpdate)(nil)
 
-// CardAdd, state 11
+// CardUpdate, state 11
 // Form for credit card adding.
-type CardAdd struct {
+type CardUpdate struct {
 	inputs      []textinput.Model // model for card inputs.
 	focused     int
+	updateID    string
 	cardErr     error // Card validation
 	ansver      bool  // Add info message if servier send answer.
 	IsAddOk     bool  // Successful registration.
@@ -30,19 +31,8 @@ type CardAdd struct {
 }
 
 // For send error Command in tui.
-type (
-	errMsg error
-)
 
-const (
-	def = iota
-	ccn
-	exp
-	cvv
-	hld
-)
-
-func NewCardAdd() *CardAdd {
+func NewCardUpdate() *CardUpdate {
 	var inputs []textinput.Model = make([]textinput.Model, 5)
 	inputs[def] = textinput.New()
 	inputs[def].Placeholder = "My bank"
@@ -50,7 +40,6 @@ func NewCardAdd() *CardAdd {
 	inputs[def].CharLimit = 40
 	inputs[def].Width = 30
 	inputs[def].Prompt = ""
-	inputs[def].SetValue("My bank")
 
 	inputs[ccn] = textinput.New()
 	inputs[ccn].Placeholder = "4505 **** **** 1234"
@@ -58,7 +47,6 @@ func NewCardAdd() *CardAdd {
 	inputs[ccn].Width = 30
 	inputs[ccn].Prompt = ""
 	inputs[ccn].Validate = ccnValidator
-	inputs[ccn].SetValue("1111 2222 2222 2222")
 
 	inputs[exp] = textinput.New()
 	inputs[exp].Placeholder = "MM/YY "
@@ -66,7 +54,6 @@ func NewCardAdd() *CardAdd {
 	inputs[exp].Width = 5
 	inputs[exp].Prompt = ""
 	inputs[exp].Validate = expValidator
-	inputs[exp].SetValue("11/25")
 
 	inputs[cvv] = textinput.New()
 	inputs[cvv].Placeholder = "XXX"
@@ -74,16 +61,14 @@ func NewCardAdd() *CardAdd {
 	inputs[cvv].Width = 5
 	inputs[cvv].Prompt = ""
 	inputs[cvv].Validate = cvvValidator
-	inputs[cvv].SetValue("425")
 
 	inputs[hld] = textinput.New()
 	inputs[hld].Placeholder = "Card Holder"
 	inputs[hld].CharLimit = 30
 	inputs[hld].Width = 30
 	inputs[hld].Prompt = ""
-	inputs[hld].SetValue("Mariya")
 
-	return &CardAdd{
+	return &CardUpdate{
 		inputs:  inputs,
 		focused: 0,
 		cardErr: nil,
@@ -92,11 +77,24 @@ func NewCardAdd() *CardAdd {
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (ca *CardAdd) GetInit(m *tui.Model, updateID *string) tea.Cmd {
+func (ca *CardUpdate) GetInit(m *tui.Model, updateID *string) tea.Cmd {
+	if updateID != nil {
+		ca.updateID = *updateID
+	} else {
+		ca.ansver = true
+		ca.ansverError = errors.New("can't find update id")
+	}
+	// Init fields.
+	card := m.Cards[ca.updateID]
+	ca.inputs[def].SetValue(card.Definition)
+	ca.inputs[def].Focus()
+	ca.inputs[ccn].SetValue(card.Ccn)
+	ca.inputs[exp].SetValue(card.Exp)
+	ca.inputs[hld].SetValue(card.Hld)
 	return textinput.Blink
 }
 
-func (ca *CardAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func (ca *CardUpdate) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmds []tea.Cmd = make([]tea.Cmd, len(ca.inputs))
 
@@ -106,22 +104,22 @@ func (ca *CardAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type.String() {
 		case "ctrl+c", "esc":
 			ca.cleanform()
-			m.ChangeState(tui.CardAdd, tui.CardMenu, false, nil)
+			m.ChangeState(tui.CardUpdate, tui.CardMenu, false, nil)
 			return m, nil
 		case "enter":
 			// If user adding done success, enter for continue...
 			if ca.IsAddOk {
 				ca.cleanform()
-				m.ChangeState(tui.CardAdd, tui.CardMenu, false, nil)
+				m.ChangeState(tui.CardUpdate, tui.CardList, false, nil)
 				return m, nil
 			}
 			if ca.focused == len(ca.inputs)-1 {
 				zap.S().Infof("Text inputs %s  %s", ca.inputs[0].Value(), ca.inputs[1].Value(), ca.inputs[2].Value(), ca.inputs[3].Value(), ca.inputs[4].Value())
-				_, status, err := client.CardAdd(m.Client, m.Conf, m.JWT, ca.inputs[0].Value(), ca.inputs[1].Value(), ca.inputs[2].Value(), ca.inputs[3].Value(), ca.inputs[4].Value())
+				status, err := client.CardsUpdate(m.Client, m.Conf, m.JWT, ca.updateID, ca.inputs[0].Value(), ca.inputs[1].Value(), ca.inputs[2].Value(), ca.inputs[3].Value(), ca.inputs[4].Value())
 				ca.ansver = true
 				ca.ansverCode = status
 				ca.ansverError = err
-				if status == http.StatusCreated {
+				if status == http.StatusOK {
 					ca.IsAddOk = true
 					return m, nil
 				}
@@ -154,7 +152,7 @@ func (ca *CardAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // The main view, which just calls the appropriate sub-view
-func (ca *CardAdd) GetView(m *tui.Model) string {
+func (ca *CardUpdate) GetView(m *tui.Model) string {
 	b := strings.Builder{}
 	b.WriteString(fmt.Sprintf(
 		`
@@ -210,7 +208,7 @@ func (ca *CardAdd) GetView(m *tui.Model) string {
 }
 
 // Reset all inputs and form errors.
-func (ca *CardAdd) cleanform() {
+func (ca *CardUpdate) cleanform() {
 	ca.ansver = false
 	ca.IsAddOk = false
 	ca.ansverCode = 0
@@ -220,65 +218,15 @@ func (ca *CardAdd) cleanform() {
 // Validators and help func
 
 // nextInput focuses the next input field
-func (ca *CardAdd) nextInput() {
+func (ca *CardUpdate) nextInput() {
 	ca.focused = (ca.focused + 1) % len(ca.inputs)
 }
 
 // prevInput focuses the previous input field
-func (ca *CardAdd) prevInput() {
+func (ca *CardUpdate) prevInput() {
 	ca.focused--
 	// Wrap around
 	if ca.focused < 0 {
 		ca.focused = len(ca.inputs) - 1
 	}
-}
-
-// Validator functions to ensure valid input
-func ccnValidator(s string) error {
-	// Credit Card Number should a string less than 20 digits
-	// It should include 16 integers and 3 spaces
-	if len(s) > 16+3 {
-		return fmt.Errorf("CCN is too long")
-	}
-
-	if len(s) == 0 || len(s)%5 != 0 && (s[len(s)-1] < '0' || s[len(s)-1] > '9') {
-		return fmt.Errorf("CCN is invalid")
-	}
-
-	// The last digit should be a number unless it is a multiple of 4 in which
-	// case it should be a space
-	if len(s)%5 == 0 && s[len(s)-1] != ' ' {
-		return fmt.Errorf("CCN must separate groups with spaces")
-	}
-
-	// The remaining digits should be integers
-	c := strings.ReplaceAll(s, " ", "")
-	_, err := strconv.ParseInt(c, 10, 64)
-
-	return err
-}
-
-func expValidator(s string) error {
-	// The 3 character should be a slash (/)
-	// The rest should be numbers
-	e := strings.ReplaceAll(s, "/", "")
-	_, err := strconv.ParseInt(e, 10, 64)
-	if err != nil {
-		return fmt.Errorf("EXP is invalid")
-	}
-
-	// There should be only one slash and it should be in the 2nd index (3rd character)
-	if len(s) >= 3 && (strings.Index(s, "/") != 2 || strings.LastIndex(s, "/") != 2) {
-		return fmt.Errorf("EXP is invalid")
-	}
-
-	return nil
-}
-
-func cvvValidator(s string) error {
-	// The CVV should be a number of 3 digits
-	// Since the input will already ensure that the CVV is a string of length 3,
-	// All we need to do is check that it is a number
-	_, err := strconv.ParseInt(s, 10, 64)
-	return err
 }

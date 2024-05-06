@@ -60,7 +60,7 @@ func NewLoginForm() *LoginForm {
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (lf *LoginForm) GetInit() tea.Cmd {
+func (lf *LoginForm) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return textinput.Blink
 }
 
@@ -71,10 +71,10 @@ func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "esc":
 			lf.cleanform()
 			if m.IsUserLogedIn {
-				m.ChangeState(tui.LoginForm, tui.MainMenu)
+				m.ChangeState(tui.LoginForm, tui.MainMenu, false, nil)
 				return m, nil
 			}
-			m.ChangeState(tui.LoginForm, tui.NotLoginMenu)
+			m.ChangeState(tui.LoginForm, tui.NotLoginMenu, false, nil)
 			return m, nil
 
 		// Set focus to next input
@@ -85,7 +85,7 @@ func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Loged in, exit.
 			if lf.isLogInOk {
 				lf.cleanform()
-				m.ChangeState(tui.LoginForm, tui.MainMenu)
+				m.ChangeState(tui.LoginForm, tui.MainMenu, false, nil)
 				return m, nil
 			}
 			// Submit button pressed!

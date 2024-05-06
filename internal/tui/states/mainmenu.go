@@ -25,7 +25,7 @@ func NewMainMenu() *MainMenu {
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (mm *MainMenu) GetInit() tea.Cmd {
+func (mm *MainMenu) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return nil
 }
 
@@ -51,19 +51,19 @@ func (mm *MainMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch mm.Choice {
 			// Site's login and passes.
 			case 0:
-				m.ChangeState(tui.MainMenu, tui.SiteMenu)
+				m.ChangeState(tui.MainMenu, tui.SiteMenu, false, nil)
 				return m, nil
 				// Credit cards.
 			case 1:
-				m.ChangeState(tui.MainMenu, tui.CardMenu)
+				m.ChangeState(tui.MainMenu, tui.CardMenu, false, nil)
 				return m, nil
 				// Goph text.
 			case 2:
-				m.ChangeState(tui.MainMenu, tui.GtextMenu)
+				m.ChangeState(tui.MainMenu, tui.GtextMenu, false, nil)
 				return m, nil
 				// Goph files.
 			case 3:
-				m.ChangeState(tui.MainMenu, tui.GfileMenu)
+				m.ChangeState(tui.MainMenu, tui.GfileMenu, false, nil)
 				return m, nil
 
 			case 4:
@@ -71,7 +71,7 @@ func (mm *MainMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err != nil {
 					zap.S().Errorln("Error clean user's tmp file: ", err)
 				}
-				m.ChangeState(tui.MainMenu, tui.NotLoginMenu)
+				m.ChangeState(tui.MainMenu, tui.NotLoginMenu, false, nil)
 				return m, nil
 			}
 		}

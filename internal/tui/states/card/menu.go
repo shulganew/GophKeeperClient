@@ -26,7 +26,7 @@ func NewCardMenu() *CardMenu {
 
 // Init is the first function that will be called. It returns an optional
 // initial colmand. To not perform an initial colmand return nil.
-func (cm *CardMenu) GetInit() tea.Cmd {
+func (cm *CardMenu) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return nil
 }
 
@@ -36,7 +36,7 @@ func (cm *CardMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
-			m.ChangeState(tui.CardMenu, tui.MainMenu)
+			m.ChangeState(tui.CardMenu, tui.MainMenu, false, nil)
 		case "down":
 			cm.Choice++
 			if cm.Choice > len(cm.Choices)-1 {
@@ -53,10 +53,10 @@ func (cm *CardMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch cm.Choice {
 			// List logins/pw.
 			case 0:
-				m.ChangeState(tui.CardMenu, tui.CardAdd)
+				m.ChangeState(tui.CardMenu, tui.CardAdd, false, nil)
 			// Add NEW.
 			case 1:
-				m.ChangeState(tui.CardMenu, tui.CardList)
+				m.ChangeState(tui.CardMenu, tui.CardList, false, nil)
 			}
 			return m, nil
 		}

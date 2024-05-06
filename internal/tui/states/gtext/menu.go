@@ -24,7 +24,7 @@ func NewGtextMenu() *GtextMenu {
 
 // Init is the first function that will be called. It returns an optional
 // initial colmand. To not perform an initial colmand return nil.
-func (lm *GtextMenu) GetInit() tea.Cmd {
+func (lm *GtextMenu) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return nil
 }
 
@@ -34,7 +34,7 @@ func (lm *GtextMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
-			m.ChangeState(tui.GtextMenu, tui.MainMenu)
+			m.ChangeState(tui.GtextMenu, tui.MainMenu, false, nil)
 			return m, nil
 		case "down":
 			lm.Choice++
@@ -52,10 +52,10 @@ func (lm *GtextMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch lm.Choice {
 			// List logins/pw.
 			case 0:
-				m.ChangeState(tui.GtextMenu, tui.GtextAdd)
+				m.ChangeState(tui.GtextMenu, tui.GtextAdd, false, nil)
 			// Add NEW.
 			case 1:
-				m.ChangeState(tui.GtextMenu, tui.GtextList)
+				m.ChangeState(tui.GtextMenu, tui.GtextList, false, nil)
 			}
 			return m, nil
 		}
