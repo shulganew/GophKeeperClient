@@ -23,8 +23,8 @@ vendor/
 .vscode
 
 # Generated code
-internal/services/mocks/keepercl.gen.go
-internal/api/oapi/gokeepercl.gen.go
+internal/services/mocks/
+internal/client/oapi/
 
 # certificates
 cert/

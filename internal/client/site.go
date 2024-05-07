@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
@@ -27,8 +28,8 @@ func SiteAdd(c *oapi.Client, conf config.Config, jwt, def, siteURL, slogin, spw 
 	for k, v := range resp.Header {
 		zap.S().Debugf("%s: %v\r\n", k, v[0])
 	}
-
-	zap.S().Debugln("Body: ", resp.Body)
+	body, _ := io.ReadAll(resp.Body)
+	zap.S().Debugln("Body: ", string(body))
 	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
 
 	return nsite, resp.StatusCode, nil
@@ -81,5 +82,3 @@ func SiteUpdate(c *oapi.Client, conf config.Config, jwt string, siteID, def, sit
 
 	return resp.StatusCode, nil
 }
-
-
