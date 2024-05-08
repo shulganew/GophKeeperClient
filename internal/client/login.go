@@ -2,20 +2,18 @@ package client
 
 import (
 	"context"
-	"net/http"
 	"strings"
 
-	"github.com/shulganew/GophKeeperClient/internal/app/config"
 	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 	"go.uber.org/zap"
 )
 
-func UserLogin(c *oapi.Client, conf config.Config, login, pw string) (user *oapi.NewUser, jwt string, status int, err error) {
+func UserLogin(c *oapi.Client, login, pw string) (user *oapi.NewUser, jwt string, status int, err error) {
 	// Create OAPI user.
 	user = &oapi.NewUser{Login: login, Password: pw}
 	resp, err := c.Login(context.Background(), *user)
 	if err != nil {
-		return nil, "", http.StatusInternalServerError, err
+		return nil, "", 0, err
 	}
 
 	// Print to log file for debug level.

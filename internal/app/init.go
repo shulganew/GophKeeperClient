@@ -62,7 +62,7 @@ func InitLog() zap.SugaredLogger {
 func InitModel(conf config.Config) tea.Model {
 
 	// Client with TLS session.
-	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(getTLSClietn()))
+	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn(conf.SertPath)))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -116,13 +116,13 @@ func InitModel(conf config.Config) tea.Model {
 	gm17 := gfile.NewFileAdd()
 	gtl18 := gfile.NewGfileList(conf.FileSavingPath)
 
-	// TODO make transfer object and Model constructor
 	states := []tui.State{nl0, lf1, rf2, mm3, lm4, sl5, al6, siteU7, cm8, ca9, cl10, cu11, mg12, gta13, gtl14, gtup15, gm16, gm17, gtl18}
 	return tui.Model{Conf: conf, Client: c, User: &user.NewUser, JWT: user.JWT, CurrentState: cSate, States: states}
 }
 
-func getTLSClietn() *http.Client {
-	caCertf, _ := os.ReadFile("./cert/server.crt")
+// Return http Client with TLS session config.
+func GetTLSClietn(sertPath string) *http.Client {
+	caCertf, _ := os.ReadFile(sertPath)
 	rootCAs, _ := x509.SystemCertPool()
 	// handle case where rootCAs == nil and create an empty pool...
 	if ok := rootCAs.AppendCertsFromPEM(caCertf); !ok {

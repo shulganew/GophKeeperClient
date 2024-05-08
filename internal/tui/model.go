@@ -154,7 +154,7 @@ func (m *Model) ChangeState(current, next int, isUpdate bool, updateID *string) 
 		m.SetSites(sites)
 		zap.S().Infoln("Set sites from server: ", len(sites))
 	case CardList:
-		cards, status, err := client.CardsList(m.Client, m.Conf, m.JWT)
+		cards, status, err := client.CardsList(m.Client, m.JWT)
 		if err != nil {
 			zap.S().Errorln("Can't loading user's cards data: ", err)
 			break

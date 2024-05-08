@@ -115,7 +115,7 @@ func (ca *CardUpdate) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) 
 			}
 			if ca.focused == len(ca.inputs)-1 {
 				zap.S().Infof("Text inputs %s  %s", ca.inputs[0].Value(), ca.inputs[1].Value(), ca.inputs[2].Value(), ca.inputs[3].Value(), ca.inputs[4].Value())
-				status, err := client.CardsUpdate(m.Client, m.Conf, m.JWT, ca.updateID, ca.inputs[0].Value(), ca.inputs[1].Value(), ca.inputs[2].Value(), ca.inputs[3].Value(), ca.inputs[4].Value())
+				status, err := client.CardsUpdate(m.Client, m.JWT, ca.updateID, ca.inputs[0].Value(), ca.inputs[1].Value(), ca.inputs[2].Value(), ca.inputs[3].Value(), ca.inputs[4].Value())
 				ca.ansver = true
 				ca.ansverCode = status
 				ca.ansverError = err

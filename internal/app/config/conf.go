@@ -19,6 +19,7 @@ type Config struct {
 	// flag -a, Server address
 	Address        string
 	FileSavingPath string
+	SertPath       string //sertificate TLS file path (server public key)
 }
 
 func InitConfig() *Config {
@@ -26,6 +27,7 @@ func InitConfig() *Config {
 	// read command line argue
 	serverAddress := flag.String("a", "localhost:8443", "Service GKeeper address")
 	filePath := flag.String("f", "/home/igor/files/", "Service GKeeper address")
+	sertPath := flag.String("s", "cert/server.crt", "Service GKeeper address")
 	flag.Parse()
 
 	// Check and parse URL
@@ -46,6 +48,7 @@ func InitConfig() *Config {
 	}
 
 	config.FileSavingPath = *filePath
+	config.SertPath = *sertPath
 	zap.S().Infoln("Configuration complite")
 	return &config
 }

@@ -74,13 +74,13 @@ func GtextList(c *oapi.Client, conf config.Config, jwt string) (gtexts map[strin
 // Site update by id.
 func GtextUpdate(c *oapi.Client, conf config.Config, jwt string, gtextID string, text string) (status int, err error) {
 	// Create OAPI text object.
-	gtext := &oapi.Gtext{GtextID: gtextID, Definition: getDef(&text), Note: text}
-	resp, err := c.UpdateGtext(context.TODO(), *gtext, func(ctx context.Context, req *http.Request) error {
+	gtext := oapi.Gtext{GtextID: gtextID, Definition: getDef(&text), Note: text}
+	resp, err := c.UpdateGtext(context.TODO(), gtext, func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)
 		return nil
 	})
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return resp.StatusCode, err
 	}
 
 	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)

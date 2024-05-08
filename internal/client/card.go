@@ -12,7 +12,7 @@ import (
 
 // Add to Server user's card credentials: login and password.
 // If card created success on the server, it return new UUID of created card object.
-func CardAdd(c *oapi.Client, conf config.Config, jwt, def, ccn, cvv, exp, hld string) (ncard *oapi.NewCard, status int, err error) {
+func CardAdd(c *oapi.Client, jwt, def, ccn, cvv, exp, hld string) (ncard *oapi.NewCard, status int, err error) {
 
 	// Create OAPI card object.
 	ncard = &oapi.NewCard{Definition: def, Ccn: ccn, Cvv: cvv, Exp: exp, Hld: hld}
@@ -22,7 +22,7 @@ func CardAdd(c *oapi.Client, conf config.Config, jwt, def, ccn, cvv, exp, hld st
 		return nil
 	})
 	if err != nil {
-		return nil, http.StatusInternalServerError, err
+		return nil, resp.StatusCode, err
 	}
 
 	// Print to log file for debug level.
@@ -37,7 +37,7 @@ func CardAdd(c *oapi.Client, conf config.Config, jwt, def, ccn, cvv, exp, hld st
 }
 
 // Retrive all cards credentials from the server.
-func CardsList(c *oapi.Client, conf config.Config, jwt string) (cards map[string]oapi.Card, status int, err error) {
+func CardsList(c *oapi.Client, jwt string) (cards map[string]oapi.Card, status int, err error) {
 
 	// Create OAPI card object.
 	resp, err := c.ListCards(context.TODO(), func(ctx context.Context, req *http.Request) error {
@@ -67,10 +67,10 @@ func CardsList(c *oapi.Client, conf config.Config, jwt string) (cards map[string
 }
 
 // Update card by id.
-func CardsUpdate(c *oapi.Client, conf config.Config, jwt string, cardID, def, ccn, cvv, exp, hld string) (status int, err error) {
+func CardsUpdate(c *oapi.Client, jwt string, cardID, def, ccn, cvv, exp, hld string) (status int, err error) {
 	// Create OAPI card object.
-	card := &oapi.Card{CardID: cardID, Definition: def, Ccn: ccn, Cvv: cvv, Exp: exp, Hld: hld}
-	resp, err := c.UpdateCard(context.TODO(), *card, func(ctx context.Context, req *http.Request) error {
+	card := oapi.Card{CardID: cardID, Definition: def, Ccn: ccn, Cvv: cvv, Exp: exp, Hld: hld}
+	resp, err := c.UpdateCard(context.TODO(), card, func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)
 		return nil
 	})

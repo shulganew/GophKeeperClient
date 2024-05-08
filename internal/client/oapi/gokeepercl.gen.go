@@ -16,6 +16,10 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+const (
+	BearerAuthScopes = "BearerAuth.Scopes"
+)
+
 // Card defines model for Card.
 type Card struct {
 	// CardID id card data
@@ -68,6 +72,15 @@ type Gtext struct {
 
 	// Note main text data
 	Note string `json:"note"`
+}
+
+// Key defines model for Key.
+type Key struct {
+	// New new master key
+	New string `json:"new"`
+
+	// Old old master key
+	Old string `json:"old"`
 }
 
 // NewCard defines model for NewCard.
@@ -150,6 +163,9 @@ type Site struct {
 	// Spw passwor for site
 	Spw string `json:"spw"`
 }
+
+// NewMasterJSONRequestBody defines body for NewMaster for application/json ContentType.
+type NewMasterJSONRequestBody = Key
 
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = NewUser
@@ -248,6 +264,14 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// EKeyNew request
+	EKeyNew(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// NewMasterWithBody request with any body
+	NewMasterWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	NewMaster(ctx context.Context, body NewMasterJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// LoginWithBody request with any body
 	LoginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -308,6 +332,42 @@ type ClientInterface interface {
 
 	// DelAny request
 	DelAny(ctx context.Context, secretID string, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) EKeyNew(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEKeyNewRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) NewMasterWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewNewMasterRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) NewMaster(ctx context.Context, body NewMasterJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewNewMasterRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) LoginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -584,6 +644,73 @@ func (c *Client) DelAny(ctx context.Context, secretID string, reqEditors ...Requ
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewEKeyNewRequest generates requests for EKeyNew
+func NewEKeyNewRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/admin/key")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewNewMasterRequest calls the generic NewMaster builder with application/json body
+func NewNewMasterRequest(server string, body NewMasterJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewNewMasterRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewNewMasterRequestWithBody generates requests for NewMaster with any type of body
+func NewNewMasterRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/admin/master")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
 }
 
 // NewLoginRequest calls the generic Login builder with application/json body
@@ -1154,6 +1281,14 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// EKeyNewWithResponse request
+	EKeyNewWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*EKeyNewResponse, error)
+
+	// NewMasterWithBodyWithResponse request with any body
+	NewMasterWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*NewMasterResponse, error)
+
+	NewMasterWithResponse(ctx context.Context, body NewMasterJSONRequestBody, reqEditors ...RequestEditorFn) (*NewMasterResponse, error)
+
 	// LoginWithBodyWithResponse request with any body
 	LoginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LoginResponse, error)
 
@@ -1214,6 +1349,50 @@ type ClientWithResponsesInterface interface {
 
 	// DelAnyWithResponse request
 	DelAnyWithResponse(ctx context.Context, secretID string, reqEditors ...RequestEditorFn) (*DelAnyResponse, error)
+}
+
+type EKeyNewResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r EKeyNewResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EKeyNewResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type NewMasterResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r NewMasterResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r NewMasterResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type LoginResponse struct {
@@ -1553,6 +1732,32 @@ func (r DelAnyResponse) StatusCode() int {
 	return 0
 }
 
+// EKeyNewWithResponse request returning *EKeyNewResponse
+func (c *ClientWithResponses) EKeyNewWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*EKeyNewResponse, error) {
+	rsp, err := c.EKeyNew(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEKeyNewResponse(rsp)
+}
+
+// NewMasterWithBodyWithResponse request with arbitrary body returning *NewMasterResponse
+func (c *ClientWithResponses) NewMasterWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*NewMasterResponse, error) {
+	rsp, err := c.NewMasterWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseNewMasterResponse(rsp)
+}
+
+func (c *ClientWithResponses) NewMasterWithResponse(ctx context.Context, body NewMasterJSONRequestBody, reqEditors ...RequestEditorFn) (*NewMasterResponse, error) {
+	rsp, err := c.NewMaster(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseNewMasterResponse(rsp)
+}
+
 // LoginWithBodyWithResponse request with arbitrary body returning *LoginResponse
 func (c *ClientWithResponses) LoginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LoginResponse, error) {
 	rsp, err := c.LoginWithBody(ctx, contentType, body, reqEditors...)
@@ -1750,6 +1955,58 @@ func (c *ClientWithResponses) DelAnyWithResponse(ctx context.Context, secretID s
 		return nil, err
 	}
 	return ParseDelAnyResponse(rsp)
+}
+
+// ParseEKeyNewResponse parses an HTTP response from a EKeyNewWithResponse call
+func ParseEKeyNewResponse(rsp *http.Response) (*EKeyNewResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EKeyNewResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseNewMasterResponse parses an HTTP response from a NewMasterWithResponse call
+func ParseNewMasterResponse(rsp *http.Response) (*NewMasterResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &NewMasterResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseLoginResponse parses an HTTP response from a LoginWithResponse call

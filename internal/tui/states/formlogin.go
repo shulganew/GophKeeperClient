@@ -91,7 +91,7 @@ func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Submit button pressed!
 			if s == "enter" && lf.focusIndex == len(lf.inputs) {
 				zap.S().Infof("Text inputs %s  %s", lf.inputs[0].Value(), lf.inputs[1].Value())
-				user, jwt, status, err := client.UserLogin(m.Client, m.Conf, lf.inputs[0].Value(), lf.inputs[1].Value())
+				user, jwt, status, err := client.UserLogin(m.Client, lf.inputs[0].Value(), lf.inputs[1].Value())
 				lf.ansver = true
 				lf.ansverCode = status
 				lf.ansverError = err

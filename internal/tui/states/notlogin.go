@@ -31,7 +31,6 @@ func (nl *NotLogin) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 // Main update function.
 func (nl *NotLogin) GetUpdate(m *tui.Model, msg tea.Msg) (tm tea.Model, tcmd tea.Cmd) {
 	// Add header.
-
 	nl.updateChoices(m, msg)
 	tm, tcmd = GetDefaulUpdate(m, msg)
 	return tm, tcmd
