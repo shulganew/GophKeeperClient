@@ -15,12 +15,14 @@ var _ tui.State = (*MainMenu)(nil)
 
 // Main menu for log in users, state 3
 type MainMenu struct {
-	Choices []string
-	Choice  int
+	Choices      []string
+	Choice       int
+	BuildVersion string
+	BuilDate     string
 }
 
-func NewMainMenu() *MainMenu {
-	return &MainMenu{Choices: []string{"Sites logins/pw", "Credit cards", "Secret text", "Sectret bin data", "Logout"}}
+func NewMainMenu(buildVersion, buildData string) *MainMenu {
+	return &MainMenu{BuildVersion: buildVersion, BuilDate: buildData, Choices: []string{"Sites logins/pw", "Credit cards", "Secret text", "Sectret bin data", "Logout"}}
 }
 
 // Init is the first function that will be called. It returns an optional
@@ -83,7 +85,7 @@ func (mm *MainMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 // The main view, which just calls the appropriate sub-view
 func (mm *MainMenu) GetView(m *tui.Model) string {
 	s := strings.Builder{}
-	s.WriteString(GetHeaderView())
+	s.WriteString(GetHeaderView(mm.BuildVersion, mm.BuilDate))
 	if m.Quitting {
 		s.WriteString("\n  See you later!\n\n")
 	}

@@ -8,12 +8,17 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	buildVersion string = "N/A"
+	buildDate    string = "N/A"
+)
+
 func main() {
 	app.InitLog()
 	zap.S().Infoln("Start app")
 
 	conf := config.InitConfig()
-	initialModel := app.InitModel(*conf)
+	initialModel := app.InitModel(*conf, buildVersion, buildDate)
 
 	p := tea.NewProgram(initialModel, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {

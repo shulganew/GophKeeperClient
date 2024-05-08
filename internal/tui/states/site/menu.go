@@ -14,12 +14,14 @@ var _ tui.State = (*SiteMenu)(nil)
 
 // Main site's login and password administration, state 4
 type SiteMenu struct {
-	Choices []string
-	Choice  int
+	Choices      []string
+	Choice       int
+	BuildVersion string
+	BuilDate     string
 }
 
-func NewSietMenu() *SiteMenu {
-	return &SiteMenu{Choices: []string{"List/update/delete logins/pw", "Add NEW"}}
+func NewSietMenu(buildVersion, buildData string) *SiteMenu {
+	return &SiteMenu{BuildVersion: buildVersion, BuilDate: buildData, Choices: []string{"List/update/delete logins/pw", "Add NEW"}}
 }
 
 // Init is the first function that will be called. It returns an optional
@@ -63,11 +65,11 @@ func (lm *SiteMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // The main view, which just calls the appropriate sub-view
-func (lm *SiteMenu) GetView(m *tui.Model) string {
+func (sm *SiteMenu) GetView(m *tui.Model) string {
 	s := strings.Builder{}
-	s.WriteString(states.GetHeaderView())
+	s.WriteString(states.GetHeaderView(sm.BuildVersion, sm.BuilDate))
 
-	s.WriteString(lm.choicesRegister(m))
+	s.WriteString(sm.choicesRegister(m))
 
 	s.WriteString(states.GetHelpView())
 	return s.String()

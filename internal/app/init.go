@@ -59,8 +59,7 @@ func InitLog() zap.SugaredLogger {
 	return sugar
 }
 
-func InitModel(conf config.Config) tea.Model {
-
+func InitModel(conf config.Config, version, date string) tea.Model {
 	// Client with TLS session.
 	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(GetTLSClietn(conf.SertPath)))
 	if err != nil {
@@ -80,7 +79,7 @@ func InitModel(conf config.Config) tea.Model {
 	//
 	// Menu: Init Not Login, state 0.
 	//
-	nl0 := states.NewNotLogin()
+	nl0 := states.NewNotLogin(version, date)
 	// Login form, state 1.
 	lf1 := states.NewLoginForm()
 	// Register form - state 2.
@@ -88,11 +87,11 @@ func InitModel(conf config.Config) tea.Model {
 	//
 	// Menu: Main menu for loged in users. State 3.
 	//
-	mm3 := states.NewMainMenu()
+	mm3 := states.NewMainMenu(version, date)
 	//
 	// Menu: Save site's login and passwords. 4
 	//
-	lm4 := site.NewSietMenu()
+	lm4 := site.NewSietMenu(version, date)
 	// List site's login and passwords 5
 	sl5 := site.NewSiteList()
 	// Add site's login and passwords 6
@@ -106,13 +105,13 @@ func InitModel(conf config.Config) tea.Model {
 	cu11 := card.NewCardUpdate()
 
 	// Text menu
-	mg12 := gtext.NewGtextMenu()
+	mg12 := gtext.NewGtextMenu(version, date)
 	gta13 := gtext.NewGtextAdd()
 	gtl14 := gtext.NewGtextList()
 	gtup15 := gtext.NewGtextUpdate()
 
 	// Text menu
-	gm16 := gfile.NewGfileMenu()
+	gm16 := gfile.NewGfileMenu(version, date)
 	gm17 := gfile.NewFileAdd()
 	gtl18 := gfile.NewGfileList(conf.FileSavingPath)
 

@@ -14,12 +14,14 @@ var _ tui.State = (*GfileMenu)(nil)
 
 // Main gtext menu
 type GfileMenu struct {
-	Choices []string
-	Choice  int
+	Choices      []string
+	Choice       int
+	BuildVersion string
+	BuilDate     string
 }
 
-func NewGfileMenu() *GfileMenu {
-	return &GfileMenu{Choices: []string{"Upload secret file data", "List and download"}}
+func NewGfileMenu(buildVersion, buildData string) *GfileMenu {
+	return &GfileMenu{BuildVersion: buildVersion, BuilDate: buildData, Choices: []string{"Upload secret file data", "List and download"}}
 }
 
 // Init is the first function that will be called. It returns an optional
@@ -66,7 +68,7 @@ func (lm *GfileMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 // The main view, which just calls the appropriate sub-view
 func (lm *GfileMenu) GetView(m *tui.Model) string {
 	s := strings.Builder{}
-	s.WriteString(states.GetHeaderView())
+	s.WriteString(states.GetHeaderView(lm.BuildVersion, lm.BuilDate))
 	s.WriteString(lm.choicesRegister(m))
 	s.WriteString(states.GetHelpView())
 	return s.String()

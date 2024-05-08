@@ -15,11 +15,6 @@ const MakeKey = "/admin/key"
 const MakeMaster = "/admin/master"
 const Shema = "https://"
 
-// var Usage = func() {
-// 	fmt.Fprintf(os.Stdout, "Usage of %s:\n", os.Args[0])
-// 	flag.PrintDefaults()
-// }
-
 func main() {
 
 	log.Println("Start app")
