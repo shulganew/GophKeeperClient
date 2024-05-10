@@ -59,11 +59,11 @@ func (r *UploadReader) Read(b []byte) (totlal int, err error) {
 	// Add file bytes
 	if r.index >= PreambleLeth+r.metaLen {
 		bf := make([]byte, len(b)-totlal)
-		_, err := r.file.Read(bf)
+		fn, err := r.file.Read(bf)
 		if err != nil {
 			return totlal, err
 		}
-		n := copy(b[PreambleLeth+r.metaLen:], bf)
+		n := copy(b[PreambleLeth+r.metaLen:PreambleLeth+r.metaLen:PreambleLeth+r.metaLen+int64(fn)], bf)
 		r.index += int64(n)
 		totlal += n
 		return totlal, nil
