@@ -6,11 +6,13 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	"github.com/alecthomas/units"
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
 	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 	"go.uber.org/zap"
@@ -63,7 +65,7 @@ func (r *UploadReader) Read(b []byte) (totlal int, err error) {
 		if err != nil {
 			return totlal, err
 		}
-		n := copy(b[PreambleLeth+r.metaLen:PreambleLeth+r.metaLen:PreambleLeth+r.metaLen+int64(fn)], bf)
+		n := copy(b[totlal:totlal+fn], bf)
 		r.index += int64(n)
 		totlal += n
 		return totlal, nil
@@ -80,8 +82,20 @@ func FileAdd(c *oapi.Client, jwt, def, fPath string) (status int, err error) {
 		return http.StatusInternalServerError, err
 	}
 
-	// Create file
-	nfile := oapi.NewGfile{Definition: def, Fname: filepath.Base(file.Name())}
+	// Get file size.
+	st, err := file.Stat()
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	// File size constrain 30 MIB.
+	if st.Size() > int64(units.Mebibyte*30) {
+		zap.S().Errorln("File too big, size less 30MiB.")
+		return 0, errors.New("file too big, size less 30MiB")
+	}
+
+	// Create nfile
+	nfile := oapi.NewGfile{Definition: def, Fname: filepath.Base(file.Name()), Size: st.Size()}
 
 	// Encode nfile as metadata to binary
 	var md bytes.Buffer
@@ -123,7 +137,7 @@ func FileAdd(c *oapi.Client, jwt, def, fPath string) (status int, err error) {
 	return resp.StatusCode, nil
 }
 
-func GfileList(c *oapi.Client,  jwt string) (gfiles map[string]oapi.Gfile, status int, err error) {
+func GfileList(c *oapi.Client, jwt string) (gfiles map[string]oapi.Gfile, status int, err error) {
 	// Create OAPI gfile object.
 	resp, err := c.ListGfiles(context.TODO(), func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)

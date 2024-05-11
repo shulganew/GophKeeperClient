@@ -60,6 +60,9 @@ type Gfile struct {
 
 	// GfileID file id - secret_id in DB.
 	GfileID string `json:"gfileID"`
+
+	// Size File size
+	Size int64 `json:"size"`
 }
 
 // Gtext defines model for Gtext.
@@ -108,6 +111,9 @@ type NewGfile struct {
 
 	// Fname File name on the user's side
 	Fname string `json:"fname"`
+
+	// Size File size
+	Size int64 `json:"size"`
 }
 
 // NewGtext defines model for NewGtext.
