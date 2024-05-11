@@ -10,7 +10,7 @@ import (
 )
 
 // Site update by id.
-func Delete(c *oapi.Client, conf config.Config, jwt, secretID string) (status int, err error) {
+func Delete(c *oapi.Client, jwt, secretID string) (status int, err error) {
 	// Create OAPI site object.
 	resp, err := c.DelAny(context.TODO(), secretID, func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)

@@ -66,7 +66,7 @@ func (sl *CardList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+d":
 			cardID := sl.list.SelectedItem().(Card).CardID
 			// Delete card.
-			status, err := client.Delete(m.Client, m.Conf, m.JWT, cardID)
+			status, err := client.Delete(m.Client, m.JWT, cardID)
 			if err == nil && status == http.StatusOK {
 				delete(m.Cards, cardID)
 			}

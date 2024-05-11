@@ -73,7 +73,7 @@ func (r *UploadReader) Read(b []byte) (totlal int, err error) {
 }
 
 // Upload files to server.
-func FileAdd(c *oapi.Client, conf config.Config, jwt, def, fPath string) (status int, err error) {
+func FileAdd(c *oapi.Client, jwt, def, fPath string) (status int, err error) {
 	// Loading file form os
 	file, err := os.Open(fPath)
 	if err != nil {
@@ -123,7 +123,7 @@ func FileAdd(c *oapi.Client, conf config.Config, jwt, def, fPath string) (status
 	return resp.StatusCode, nil
 }
 
-func GfileList(c *oapi.Client, conf config.Config, jwt string) (gfiles map[string]oapi.Gfile, status int, err error) {
+func GfileList(c *oapi.Client,  jwt string) (gfiles map[string]oapi.Gfile, status int, err error) {
 	// Create OAPI gfile object.
 	resp, err := c.ListGfiles(context.TODO(), func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)

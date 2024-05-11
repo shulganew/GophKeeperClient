@@ -66,7 +66,7 @@ func (sl *SiteList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+d":
 			siteID := sl.list.SelectedItem().(Site).SiteID
 			// Delete site.
-			status, err := client.Delete(m.Client, m.Conf, m.JWT, siteID)
+			status, err := client.Delete(m.Client,  m.JWT, siteID)
 			if err == nil && status == http.StatusOK {
 				delete(m.Sites, siteID)
 			}

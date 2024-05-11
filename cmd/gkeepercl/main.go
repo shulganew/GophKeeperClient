@@ -4,6 +4,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/shulganew/GophKeeperClient/internal/app"
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
+	"github.com/shulganew/GophKeeperClient/internal/app/logging"
 
 	"go.uber.org/zap"
 )
@@ -14,7 +15,7 @@ var (
 )
 
 func main() {
-	app.InitLog()
+	logging.InitLog()
 	zap.S().Infoln("Start app")
 
 	conf := config.InitConfig()
