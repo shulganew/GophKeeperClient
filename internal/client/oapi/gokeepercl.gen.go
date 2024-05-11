@@ -301,6 +301,9 @@ type ClientInterface interface {
 	// AddGfileWithBody request with any body
 	AddGfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DelGfile request
+	DelGfile(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetGfile request
 	GetGfile(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -492,6 +495,18 @@ func (c *Client) ListGfiles(ctx context.Context, reqEditors ...RequestEditorFn) 
 
 func (c *Client) AddGfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAddGfileRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DelGfile(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDelGfileRequest(c.Server, fileID)
 	if err != nil {
 		return nil, err
 	}
@@ -956,6 +971,40 @@ func NewAddGfileRequestWithBody(server string, contentType string, body io.Reade
 	return req, nil
 }
 
+// NewDelGfileRequest generates requests for DelGfile
+func NewDelGfileRequest(server string, fileID string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "fileID", runtime.ParamLocationPath, fileID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/user/file/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetGfileRequest generates requests for GetGfile
 func NewGetGfileRequest(server string, fileID string) (*http.Request, error) {
 	var err error
@@ -1318,6 +1367,9 @@ type ClientWithResponsesInterface interface {
 	// AddGfileWithBodyWithResponse request with any body
 	AddGfileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGfileResponse, error)
 
+	// DelGfileWithResponse request
+	DelGfileWithResponse(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*DelGfileResponse, error)
+
 	// GetGfileWithResponse request
 	GetGfileWithResponse(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*GetGfileResponse, error)
 
@@ -1546,6 +1598,28 @@ func (r AddGfileResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r AddGfileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DelGfileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r DelGfileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DelGfileResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1851,6 +1925,15 @@ func (c *ClientWithResponses) AddGfileWithBodyWithResponse(ctx context.Context, 
 		return nil, err
 	}
 	return ParseAddGfileResponse(rsp)
+}
+
+// DelGfileWithResponse request returning *DelGfileResponse
+func (c *ClientWithResponses) DelGfileWithResponse(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*DelGfileResponse, error) {
+	rsp, err := c.DelGfile(ctx, fileID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDelGfileResponse(rsp)
 }
 
 // GetGfileWithResponse request returning *GetGfileResponse
@@ -2200,6 +2283,32 @@ func ParseAddGfileResponse(rsp *http.Response) (*AddGfileResponse, error) {
 		}
 		response.JSON201 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDelGfileResponse parses an HTTP response from a DelGfileWithResponse call
+func ParseDelGfileResponse(rsp *http.Response) (*DelGfileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DelGfileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

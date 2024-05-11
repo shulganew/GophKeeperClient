@@ -67,7 +67,7 @@ func (sl *GtextList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+d":
 			gtextID := sl.list.SelectedItem().(Gtext).GtextID
 			// Delete site.
-			status, err := client.Delete(m.Client,  m.JWT, gtextID)
+			status, err := client.DeleteAny(m.Client, m.JWT, gtextID)
 			if err == nil && status == http.StatusOK {
 				delete(m.Gtext, gtextID)
 			}
