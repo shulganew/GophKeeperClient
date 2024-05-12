@@ -32,3 +32,6 @@ internal/client/oapi/
 
 # certificates
 cert/
+
+# Linter
+golangci-lint
