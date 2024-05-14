@@ -11,7 +11,6 @@ import (
 	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/styles"
-	"go.uber.org/zap"
 	"golang.org/x/term"
 )
 
@@ -64,6 +63,9 @@ func (sl *CardList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ChangeState(tui.CardList, tui.CardUpdate, true, &cardID)
 			return m, nil
 		case "ctrl+d":
+			if len(sl.list.Items()) == 0 {
+				return m, nil
+			}
 			cardID := sl.list.SelectedItem().(Card).CardID
 			// Delete card.
 			status, err := client.DeleteAny(m.Client, m.JWT, cardID)
@@ -72,7 +74,6 @@ func (sl *CardList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		case "enter":
-			zap.S().Infoln(sl.list.SelectedItem().(Card).CardID)
 			return m, nil
 
 		}

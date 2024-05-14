@@ -170,6 +170,9 @@ type Site struct {
 	Spw string `json:"spw"`
 }
 
+// AddGfileJSONBody defines parameters for AddGfile.
+type AddGfileJSONBody = map[string]interface{}
+
 // NewMasterJSONRequestBody defines body for NewMaster for application/json ContentType.
 type NewMasterJSONRequestBody = Key
 
@@ -184,6 +187,9 @@ type AddCardJSONRequestBody = NewCard
 
 // UpdateCardJSONRequestBody defines body for UpdateCard for application/json ContentType.
 type UpdateCardJSONRequestBody = Card
+
+// AddGfileJSONRequestBody defines body for AddGfile for application/json ContentType.
+type AddGfileJSONRequestBody = AddGfileJSONBody
 
 // AddSiteJSONRequestBody defines body for AddSite for application/json ContentType.
 type AddSiteJSONRequestBody = NewSite
@@ -307,11 +313,16 @@ type ClientInterface interface {
 	// AddGfileWithBody request with any body
 	AddGfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	AddGfile(ctx context.Context, body AddGfileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DelGfile request
 	DelGfile(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetGfile request
 	GetGfile(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UploadGfileWithBody request with any body
+	UploadGfileWithBody(ctx context.Context, fileID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSites request
 	ListSites(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -511,6 +522,18 @@ func (c *Client) AddGfileWithBody(ctx context.Context, contentType string, body 
 	return c.Client.Do(req)
 }
 
+func (c *Client) AddGfile(ctx context.Context, body AddGfileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddGfileRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) DelGfile(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDelGfileRequest(c.Server, fileID)
 	if err != nil {
@@ -525,6 +548,18 @@ func (c *Client) DelGfile(ctx context.Context, fileID string, reqEditors ...Requ
 
 func (c *Client) GetGfile(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetGfileRequest(c.Server, fileID)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UploadGfileWithBody(ctx context.Context, fileID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUploadGfileRequestWithBody(c.Server, fileID, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -948,6 +983,17 @@ func NewListGfilesRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewAddGfileRequest calls the generic AddGfile builder with application/json body
+func NewAddGfileRequest(server string, body AddGfileJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAddGfileRequestWithBody(server, "application/json", bodyReader)
+}
+
 // NewAddGfileRequestWithBody generates requests for AddGfile with any type of body
 func NewAddGfileRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
@@ -1041,6 +1087,42 @@ func NewGetGfileRequest(server string, fileID string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewUploadGfileRequestWithBody generates requests for UploadGfile with any type of body
+func NewUploadGfileRequestWithBody(server string, fileID string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "fileID", runtime.ParamLocationPath, fileID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/user/file/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -1373,11 +1455,16 @@ type ClientWithResponsesInterface interface {
 	// AddGfileWithBodyWithResponse request with any body
 	AddGfileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddGfileResponse, error)
 
+	AddGfileWithResponse(ctx context.Context, body AddGfileJSONRequestBody, reqEditors ...RequestEditorFn) (*AddGfileResponse, error)
+
 	// DelGfileWithResponse request
 	DelGfileWithResponse(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*DelGfileResponse, error)
 
 	// GetGfileWithResponse request
 	GetGfileWithResponse(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*GetGfileResponse, error)
+
+	// UploadGfileWithBodyWithResponse request with any body
+	UploadGfileWithBodyWithResponse(ctx context.Context, fileID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadGfileResponse, error)
 
 	// ListSitesWithResponse request
 	ListSitesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSitesResponse, error)
@@ -1648,6 +1735,28 @@ func (r GetGfileResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetGfileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UploadGfileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSONDefault  *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r UploadGfileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UploadGfileResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1933,6 +2042,14 @@ func (c *ClientWithResponses) AddGfileWithBodyWithResponse(ctx context.Context, 
 	return ParseAddGfileResponse(rsp)
 }
 
+func (c *ClientWithResponses) AddGfileWithResponse(ctx context.Context, body AddGfileJSONRequestBody, reqEditors ...RequestEditorFn) (*AddGfileResponse, error) {
+	rsp, err := c.AddGfile(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddGfileResponse(rsp)
+}
+
 // DelGfileWithResponse request returning *DelGfileResponse
 func (c *ClientWithResponses) DelGfileWithResponse(ctx context.Context, fileID string, reqEditors ...RequestEditorFn) (*DelGfileResponse, error) {
 	rsp, err := c.DelGfile(ctx, fileID, reqEditors...)
@@ -1949,6 +2066,15 @@ func (c *ClientWithResponses) GetGfileWithResponse(ctx context.Context, fileID s
 		return nil, err
 	}
 	return ParseGetGfileResponse(rsp)
+}
+
+// UploadGfileWithBodyWithResponse request with arbitrary body returning *UploadGfileResponse
+func (c *ClientWithResponses) UploadGfileWithBodyWithResponse(ctx context.Context, fileID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadGfileResponse, error) {
+	rsp, err := c.UploadGfileWithBody(ctx, fileID, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUploadGfileResponse(rsp)
 }
 
 // ListSitesWithResponse request returning *ListSitesResponse
@@ -2336,6 +2462,32 @@ func ParseGetGfileResponse(rsp *http.Response) (*GetGfileResponse, error) {
 	}
 
 	response := &GetGfileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUploadGfileResponse parses an HTTP response from a UploadGfileWithResponse call
+func ParseUploadGfileResponse(rsp *http.Response) (*UploadGfileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UploadGfileResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

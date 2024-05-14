@@ -22,20 +22,20 @@ const InputsGfile = 2
 // Inputs: login, email, pw, pw (check corret input)
 type FileAdd struct {
 	focusIndex  int
-	Inputs      []textinput.Model
+	inputs      []textinput.Model
 	ansver      bool  // Add info message if servier send answer.
-	IsAddOk     bool  // Successful registration.
+	isAddOk     bool  // Successful registration.
 	ansverCode  int   // Servier answer code.
 	ansverError error // Servier answer error.
 }
 
 func NewFileAdd() *FileAdd {
 	rf := FileAdd{
-		Inputs: make([]textinput.Model, InputsGfile),
+		inputs: make([]textinput.Model, InputsGfile),
 	}
 
 	var t textinput.Model
-	for i := range rf.Inputs {
+	for i := range rf.inputs {
 		t = textinput.New()
 		t.Cursor.Style = styles.CursorStyle
 		t.CharLimit = 32
@@ -54,7 +54,7 @@ func NewFileAdd() *FileAdd {
 			t.SetValue("/home/igor/gfile.txt")
 
 		}
-		rf.Inputs[i] = t
+		rf.inputs[i] = t
 	}
 	return &rf
 }
@@ -83,24 +83,33 @@ func (rf *FileAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			rf.ansver = false
 			s := msg.String()
 			// If user adding done success, enter for continue...
-			if rf.IsAddOk {
+			if rf.isAddOk {
 				rf.cleanform()
 				m.ChangeState(tui.GfileAdd, tui.GfileMenu, false, nil)
 				return m, nil
 			}
 			// Submit button pressed!
-			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
-				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value())
+			if s == "enter" && rf.focusIndex == len(rf.inputs) {
+				zap.S().Infof("Gfile inputs %s  %s", rf.inputs[0].Value(), rf.inputs[1].Value())
 
-				status, err := client.FileAdd(m.Client,  m.JWT, rf.Inputs[0].Value(), rf.Inputs[1].Value())
+				gfile, status, err := client.FileAdd(m.Client, m.JWT, rf.inputs[0].Value(), rf.inputs[1].Value())
+				if err != nil || status != http.StatusCreated {
+					rf.ansver = true
+					rf.ansverCode = status
+					rf.ansverError = err
+					zap.S().Infof("Gfile inputs %d | %w", status, err)
+					return m, nil
+				}
+
+				status, err = client.FileUpload(m.Client, m.JWT, rf.inputs[1].Value(), gfile.GfileID)
 				rf.ansver = true
 				rf.ansverCode = status
 				rf.ansverError = err
-				if status == http.StatusCreated {
-					rf.IsAddOk = true
+				if status == http.StatusOK {
+					rf.isAddOk = true
 					return m, nil
 				}
-				zap.S().Infof("Text inputs %d | %w", status, err)
+				zap.S().Infof("Gfile inputs %d | %w", status, err)
 				return m, nil
 			}
 
@@ -111,25 +120,25 @@ func (rf *FileAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				rf.focusIndex++
 			}
 
-			if rf.focusIndex > len(rf.Inputs) {
+			if rf.focusIndex > len(rf.inputs) {
 				rf.focusIndex = 0
 			} else if rf.focusIndex < 0 {
-				rf.focusIndex = len(rf.Inputs)
+				rf.focusIndex = len(rf.inputs)
 			}
 
-			cmds := make([]tea.Cmd, len(rf.Inputs))
-			for i := 0; i <= len(rf.Inputs)-1; i++ {
+			cmds := make([]tea.Cmd, len(rf.inputs))
+			for i := 0; i <= len(rf.inputs)-1; i++ {
 				if i == rf.focusIndex {
 					// Set focused state
-					cmds[i] = rf.Inputs[i].Focus()
-					rf.Inputs[i].PromptStyle = styles.FocusedStyle
-					rf.Inputs[i].TextStyle = styles.FocusedStyle
+					cmds[i] = rf.inputs[i].Focus()
+					rf.inputs[i].PromptStyle = styles.FocusedStyle
+					rf.inputs[i].TextStyle = styles.FocusedStyle
 					continue
 				}
 				// Remove focused state
-				rf.Inputs[i].Blur()
-				rf.Inputs[i].PromptStyle = styles.NoStyle
-				rf.Inputs[i].TextStyle = styles.NoStyle
+				rf.inputs[i].Blur()
+				rf.inputs[i].PromptStyle = styles.NoStyle
+				rf.inputs[i].TextStyle = styles.NoStyle
 			}
 
 			return m, tea.Batch(cmds...)
@@ -147,20 +156,20 @@ func (rf *FileAdd) GetView(m *tui.Model) string {
 	b.WriteString("\n")
 	b.WriteString(styles.GopherQuestion.Render("Add new file to secret storage:\n"))
 	b.WriteString("\n")
-	for i := range rf.Inputs {
-		b.WriteString(rf.Inputs[i].View())
-		if i < len(rf.Inputs)-1 {
+	for i := range rf.inputs {
+		b.WriteString(rf.inputs[i].View())
+		if i < len(rf.inputs)-1 {
 			b.WriteRune('\n')
 		}
 	}
 
 	button := &styles.BlurredButton
-	if rf.focusIndex == len(rf.Inputs) {
+	if rf.focusIndex == len(rf.inputs) {
 		button = &styles.FocusedButton
 	}
 	fmt.Fprintf(&b, "\n\n%s\n\n", *button)
 	if rf.ansver {
-		if rf.ansverCode == http.StatusCreated {
+		if rf.ansverCode == http.StatusOK {
 			b.WriteString(styles.OkStyle1.Render("File successfuly added: ", m.User.Login))
 			b.WriteString("\n\n")
 			b.WriteString(styles.GopherQuestion.Render("Press <Enter> to continue... "))
@@ -185,12 +194,12 @@ func (rf *FileAdd) GetView(m *tui.Model) string {
 
 // Help functions
 func (rf *FileAdd) updateInputs(msg tea.Msg) tea.Cmd {
-	cmds := make([]tea.Cmd, len(rf.Inputs))
+	cmds := make([]tea.Cmd, len(rf.inputs))
 
 	// Only text inputs with Focus() set will respond, so it's safe to simply
 	// update all of them here without any further logic.
-	for i := range rf.Inputs {
-		rf.Inputs[i], cmds[i] = rf.Inputs[i].Update(msg)
+	for i := range rf.inputs {
+		rf.inputs[i], cmds[i] = rf.inputs[i].Update(msg)
 	}
 
 	return tea.Batch(cmds...)
@@ -199,7 +208,7 @@ func (rf *FileAdd) updateInputs(msg tea.Msg) tea.Cmd {
 // Reset all inputs and form errors.
 func (rf *FileAdd) cleanform() {
 	rf.ansver = false
-	rf.IsAddOk = false
+	rf.isAddOk = false
 	rf.ansverCode = 0
 	rf.ansverError = nil
 }

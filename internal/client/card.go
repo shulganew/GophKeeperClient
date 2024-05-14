@@ -22,7 +22,7 @@ func CardAdd(c *oapi.Client, jwt, def, ccn, cvv, exp, hld string) (ncard *oapi.N
 		return nil
 	})
 	if err != nil {
-		return nil, resp.StatusCode, err
+		return nil, http.StatusInternalServerError, err
 	}
 
 	// Print to log file for debug level.

@@ -13,7 +13,7 @@ import (
 
 // Add to Server user's site credentials: login and password.
 // If site created success on the server, it return new UUID of created site object.
-func SiteAdd(c *oapi.Client,  jwt, def, siteURL, slogin, spw string) (nsite *oapi.NewSite, status int, err error) {
+func SiteAdd(c *oapi.Client, jwt, def, siteURL, slogin, spw string) (nsite *oapi.NewSite, status int, err error) {
 	// Create OAPI site object.
 	nsite = &oapi.NewSite{Definition: def, Site: siteURL, Slogin: slogin, Spw: spw}
 	resp, err := c.AddSite(context.TODO(), *nsite, func(ctx context.Context, req *http.Request) error {
@@ -28,7 +28,10 @@ func SiteAdd(c *oapi.Client,  jwt, def, siteURL, slogin, spw string) (nsite *oap
 	for k, v := range resp.Header {
 		zap.S().Debugf("%s: %v\r\n", k, v[0])
 	}
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
 	zap.S().Debugln("Body: ", string(body))
 	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
 
@@ -36,7 +39,7 @@ func SiteAdd(c *oapi.Client,  jwt, def, siteURL, slogin, spw string) (nsite *oap
 }
 
 // Retrive all sites credentials from the server.
-func SiteList(c *oapi.Client,  jwt string) (sites map[string]oapi.Site, status int, err error) {
+func SiteList(c *oapi.Client, jwt string) (sites map[string]oapi.Site, status int, err error) {
 	// Create OAPI site object.
 	resp, err := c.ListSites(context.TODO(), func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)

@@ -62,6 +62,9 @@ func (sl *GfileList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			return m, nil
 		case "ctrl+d":
+			if len(sl.list.Items()) == 0 {
+				return m, nil
+			}
 			fileID := sl.list.SelectedItem().(Gfile).GfileID
 			// Delete file.
 			status, err := client.DeleteFile(m.Client, m.JWT, fileID)

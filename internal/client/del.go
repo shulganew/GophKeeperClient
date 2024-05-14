@@ -17,7 +17,7 @@ func DeleteAny(c *oapi.Client, jwt, secretID string) (status int, err error) {
 		return nil
 	})
 	if err != nil {
-		return resp.StatusCode, err
+		return 0, err
 	}
 	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
 	return resp.StatusCode, nil

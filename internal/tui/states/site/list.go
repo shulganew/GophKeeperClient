@@ -11,7 +11,6 @@ import (
 	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/styles"
-	"go.uber.org/zap"
 	"golang.org/x/term"
 )
 
@@ -64,6 +63,9 @@ func (sl *SiteList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ChangeState(tui.SiteList, tui.SiteUpdate, true, &siteID)
 			return m, nil
 		case "ctrl+d":
+			if len(sl.list.Items()) == 0 {
+				return m, nil
+			}
 			siteID := sl.list.SelectedItem().(Site).SiteID
 			// Delete site.
 			status, err := client.DeleteAny(m.Client, m.JWT, siteID)
@@ -72,7 +74,6 @@ func (sl *SiteList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		case "enter":
-			zap.S().Infoln(sl.list.SelectedItem())
 			return m, nil
 		}
 

@@ -55,7 +55,7 @@ func TestGfileAdd(t *testing.T) {
 
 			// Use Client & URL from our local test server.
 			// File not existed.
-			_, err = FileAdd(c, "jwt", "Test file methods", "readme.md")
+			_, _, err = FileAdd(c, "jwt", "Test file methods", "readme.md")
 			require.Error(t, err)
 
 		})

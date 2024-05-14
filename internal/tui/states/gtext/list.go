@@ -13,7 +13,6 @@ import (
 	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/styles"
-	"go.uber.org/zap"
 	"golang.org/x/term"
 )
 
@@ -65,6 +64,9 @@ func (sl *GtextList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ChangeState(tui.GtextList, tui.GtextUpdate, true, &gtextID)
 			return m, nil
 		case "ctrl+d":
+			if len(sl.list.Items()) == 0 {
+				return m, nil
+			}
 			gtextID := sl.list.SelectedItem().(Gtext).GtextID
 			// Delete site.
 			status, err := client.DeleteAny(m.Client, m.JWT, gtextID)
@@ -73,7 +75,6 @@ func (sl *GtextList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		case "enter":
-			zap.S().Infoln(sl.list.SelectedItem())
 			return m, nil
 		}
 
