@@ -2,6 +2,7 @@ package gfile
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -28,15 +29,14 @@ func (g Gfile) Description() string {
 func (g Gfile) FilterValue() string { return g.Definition }
 
 type GfileList struct {
-	list  list.Model
-	fPath string
+	list list.Model
 }
 
 // List saved Gfile credentials.
 func NewGfileList(path string) *GfileList {
 	// Create empty list items
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
-	l.Title = fmt.Sprintf("<Insert> - download selected file to folder:  %s.", path)
+	l.Title = fmt.Sprintf("<Insert> - download selected file to folder:  %s. <ctrl+d> - del", path)
 	cl := GfileList{list: l}
 	// Fix terminal bag.
 	tw, th, _ := term.GetSize(int(os.Stdout.Fd()))
@@ -61,7 +61,16 @@ func (sl *GfileList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "enter":
 			return m, nil
-
+		case "ctrl+d":
+			if len(sl.list.Items()) == 0 {
+				return m, nil
+			}
+			fileID := sl.list.SelectedItem().(Gfile).GfileID
+			// Delete file.
+			status, err := client.DeleteFile(m.Client, m.JWT, fileID)
+			if err == nil && status == http.StatusOK {
+				delete(m.Gfile, fileID)
+			}
 		case "insert":
 			zap.S().Infoln(client.GfileGet(m.Client, m.Conf, m.JWT, sl.list.SelectedItem().(Gfile).GfileID, sl.list.SelectedItem().(Gfile).Fname))
 			return m, nil
@@ -77,7 +86,7 @@ func (sl *GfileList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// The main view, which just casls the appropriate sub-view
+// The main view, which just casls the appropriate sub-view.
 func (sl *GfileList) GetView(m *tui.Model) string {
 	// Load Gfiles from memory
 	listItems := []list.Item{}
@@ -86,13 +95,5 @@ func (sl *GfileList) GetView(m *tui.Model) string {
 		listItems = append(listItems, item)
 	}
 	sl.list.SetItems(listItems)
-
-	// b.WriteString(styles.ListStyle.Render(sl.list.View()))
-	// b.WriteString("\n\n")
-	// b.WriteString(styles.HelpStyle.Render()
-
-	// str := b.String()
-	// b.Reset()
-
 	return styles.ListStyle.Render(sl.list.View())
 }

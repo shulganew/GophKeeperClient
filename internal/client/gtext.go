@@ -14,7 +14,7 @@ import (
 
 // Add to Server user's gtext credentials: login and password.
 // If gtext created success on the server, it return new UUID of created gtext object.
-func GtextAdd(c *oapi.Client, conf config.Config, jwt, text string) (ngtext *oapi.NewGtext, status int, err error) {
+func GtextAdd(c *oapi.Client, jwt, text string) (ngtext *oapi.NewGtext, status int, err error) {
 	// Create OAPI gtext object.
 	ngtext = &oapi.NewGtext{Definition: getDef(&text), Note: text}
 	// Add saved jwt token for auth.
@@ -40,7 +40,7 @@ func GtextAdd(c *oapi.Client, conf config.Config, jwt, text string) (ngtext *oap
 }
 
 // Retrive all gtexts credentials from the server.
-func GtextList(c *oapi.Client, conf config.Config, jwt string) (gtexts map[string]oapi.Gtext, status int, err error) {
+func GtextList(c *oapi.Client, jwt string) (gtexts map[string]oapi.Gtext, status int, err error) {
 
 	// Create OAPI gtext object.
 	resp, err := c.ListGtexts(context.TODO(), func(ctx context.Context, req *http.Request) error {
@@ -72,15 +72,15 @@ func GtextList(c *oapi.Client, conf config.Config, jwt string) (gtexts map[strin
 }
 
 // Site update by id.
-func GtextUpdate(c *oapi.Client, conf config.Config, jwt string, gtextID string, text string) (status int, err error) {
+func GtextUpdate(c *oapi.Client, jwt string, gtextID string, text string) (status int, err error) {
 	// Create OAPI text object.
-	gtext := &oapi.Gtext{GtextID: gtextID, Definition: getDef(&text), Note: text}
-	resp, err := c.UpdateGtext(context.TODO(), *gtext, func(ctx context.Context, req *http.Request) error {
+	gtext := oapi.Gtext{GtextID: gtextID, Definition: getDef(&text), Note: text}
+	resp, err := c.UpdateGtext(context.TODO(), gtext, func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)
 		return nil
 	})
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return resp.StatusCode, err
 	}
 
 	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)

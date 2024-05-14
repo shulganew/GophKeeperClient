@@ -119,7 +119,7 @@ func (rf *SiteUpdate) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) 
 			// Submit button pressed!
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
 				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value(), rf.Inputs[3].Value())
-				status, err := client.SiteUpdate(m.Client, m.Conf, m.JWT, rf.updateID, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value(), rf.Inputs[3].Value())
+				status, err := client.SiteUpdate(m.Client, m.JWT, rf.updateID, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value(), rf.Inputs[3].Value())
 				rf.ansver = true
 				rf.ansverCode = status
 				rf.ansverError = err

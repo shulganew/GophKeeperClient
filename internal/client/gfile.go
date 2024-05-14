@@ -3,127 +3,92 @@ package client
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
-	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	"github.com/alecthomas/units"
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
 	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 	"go.uber.org/zap"
 )
 
-const PreambleLeth = 8
-const Content = "application/octet-stream"
-
-// Files add with two steps:
-// 1. Uplod file and return created file id in minio storage.
-// 2. Create file metadata as sectet in db with users description (definition field and file_id)
-type UploadReader struct {
-	file      *os.File
-	preambule []byte
-	metadata  []byte
-	index     int64
-	metaLen   int64
-}
-
-// Constructor for Upload files.
-// byte structute: |8-byte preambule with meta length| N-bytes metadata newGfile | File bytes |
-func NewUploadReader(file *os.File, preambule []byte, metadata []byte) *UploadReader {
-	r := new(UploadReader)
-	r.file = file
-	r.preambule = preambule
-	r.metadata = metadata
-	r.metaLen = int64(len(r.metadata))
-	return r
-}
-
-// Read to b []byte preambule, then metadata, then original file.
-func (r *UploadReader) Read(b []byte) (totlal int, err error) {
-	// Add preambule bytes (PreambleLeth), witch contains lenth of metadata (newGfile)
-	if r.index < PreambleLeth {
-		n := copy(b, r.preambule[r.index:PreambleLeth])
-		r.index += int64(n)
-		totlal += n
-	}
-
-	// Add metadata bytes - newGfiles object.
-	if r.index >= PreambleLeth && r.index < PreambleLeth+r.metaLen {
-		n := copy(b[PreambleLeth:], r.metadata[r.index-PreambleLeth:r.metaLen])
-		r.index += int64(n)
-		totlal += n
-	}
-	// Add file bytes
-	if r.index >= PreambleLeth+r.metaLen {
-		bf := make([]byte, len(b)-totlal)
-		_, err := r.file.Read(bf)
-		if err != nil {
-			return totlal, err
-		}
-		n := copy(b[PreambleLeth+r.metaLen:], bf)
-		r.index += int64(n)
-		totlal += n
-		return totlal, nil
-
-	}
-	return
-}
-
-// Upload files to server.
-func FileAdd(c *oapi.Client, conf config.Config, jwt, def, fPath string) (status int, err error) {
+// Upload file metadata to server.
+func FileAdd(c *oapi.Client, jwt, def, fPath string) (gfile *oapi.Gfile, status int, err error) {
 	// Loading file form os
 	file, err := os.Open(fPath)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return nil, http.StatusInternalServerError, err
 	}
 
-	// Create file
-	nfile := oapi.NewGfile{Definition: def, Fname: filepath.Base(file.Name())}
+	// Get file size.
+	st, err := file.Stat()
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	// File size constrain 30 MIB.
+	if st.Size() > int64(units.Mebibyte*30) {
+		zap.S().Errorln("File too big, size less 30MiB.")
+		return nil, 0, errors.New("file too big, size less 30MiB")
+	}
+
+	// Create nfile
+	nfile := oapi.NewGfile{Definition: def, Fname: filepath.Base(file.Name()), Size: st.Size()}
 
 	// Encode nfile as metadata to binary
 	var md bytes.Buffer
-	err = gob.NewEncoder(&md).Encode(&nfile)
+	err = json.NewEncoder(&md).Encode(&nfile)
 	if err != nil {
-		return 0, err
+		return nil, 0, err
 	}
 
-	metadata := md.Bytes()
-	// Write preambule - size of newGfile object (metadata).
-	p := make([]byte, PreambleLeth)
-	mLen := uint64(len(metadata))
-	zap.S().Debugln("Metadata length: ", mLen)
-	binary.LittleEndian.PutUint64(p, mLen)
-
-	ur := NewUploadReader(file, p, metadata)
-	resp, err := c.AddGfileWithBody(context.TODO(), Content, ur, func(ctx context.Context, req *http.Request) error {
+	resp, err := c.AddGfileWithBody(context.TODO(), "application/json", &md, func(ctx context.Context, req *http.Request) error {
 		// Add saved jwt token for auth.
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)
 		return nil
 	})
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
 
+	status = resp.StatusCode
+	// Decode gfile from body.
+	if status == http.StatusCreated {
+		err = json.NewDecoder(resp.Body).Decode(&gfile)
+		if err != nil {
+			zap.S().Errorln("Can't write to response in Listgfile handler", err)
+			return nil, http.StatusInternalServerError, err
+		}
+
+	}
+
+	return
+}
+
+// Upload file  to server.
+func FileUpload(c *oapi.Client, jwt, fPath, fileID string) (status int, err error) {
+	// Loading file form os.
+	file, err := os.Open(fPath)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
-
-	// Print to log file for debug level.
-	for k, v := range resp.Header {
-		zap.S().Debugf("%s: %v\r\n", k, v[0])
-	}
-	body, err := io.ReadAll(resp.Body)
+	resp, err := c.UploadGfileWithBody(context.TODO(), fileID, "application/octet-stream", file, func(ctx context.Context, req *http.Request) error {
+		// Add saved jwt token for auth.
+		req.Header.Add("Authorization", config.AuthPrefix+jwt)
+		return nil
+	})
 	if err != nil {
-		zap.S().Debugln("Body error: ", err.Error())
+		return http.StatusInternalServerError, err
 	}
-	zap.S().Debugln("Body: ", string(body))
-	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
-
-	// Get JWT token and save to User
-	return resp.StatusCode, nil
+	status = resp.StatusCode
+	return
 }
 
-func GfileList(c *oapi.Client, conf config.Config, jwt string) (gfiles map[string]oapi.Gfile, status int, err error) {
+func GfileList(c *oapi.Client, jwt string) (gfiles map[string]oapi.Gfile, status int, err error) {
 	// Create OAPI gfile object.
 	resp, err := c.ListGfiles(context.TODO(), func(ctx context.Context, req *http.Request) error {
 		req.Header.Add("Authorization", config.AuthPrefix+jwt)

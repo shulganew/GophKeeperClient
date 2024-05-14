@@ -13,7 +13,11 @@
 
 # Binaries
 cmd/gkeepercl/main
-cmd/gkeepercl/gkeeper
+cmd/gkeepercl/gkeepercl
+cmd/gkeepercl/gkadmin
+cmd/gkeepercl/gcl_linux_amd64
+cmd/gkeepercl/gcl_windows_amd64
+cmd/gkeepercl/gcl_ios_arm64
 
 # Dependency directories (remove the comment below to include it)
 vendor/
@@ -28,3 +32,6 @@ internal/client/oapi/
 
 # certificates
 cert/
+
+# Linter
+golangci-lint

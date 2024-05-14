@@ -80,7 +80,7 @@ func (ga *GtextUpdate) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd)
 			}
 
 			zap.S().Infof("Text  %s", ga.textarea.Value())
-			status, err := client.GtextUpdate(m.Client, m.Conf, m.JWT, ga.updateID, ga.textarea.Value())
+			status, err := client.GtextUpdate(m.Client, m.JWT, ga.updateID, ga.textarea.Value())
 			ga.ansver = true
 			ga.ansverCode = status
 			ga.ansverError = err

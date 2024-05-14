@@ -14,12 +14,14 @@ var _ tui.State = (*NotLogin)(nil)
 // Not login menu, state 0
 // Menu for registration and log in.
 type NotLogin struct {
-	Choices []string
-	Choice  int
+	Choices      []string
+	Choice       int
+	BuildVersion string
+	BuilDate     string
 }
 
-func NewNotLogin() *NotLogin {
-	return &NotLogin{Choices: []string{"Log In", "Sign Up"}}
+func NewNotLogin(buildVersion, buildData string) *NotLogin {
+	return &NotLogin{BuildVersion: buildVersion, BuilDate: buildData, Choices: []string{"Log In", "Sign Up"}}
 }
 
 // Init is the first function that will be called. It returns an optional
@@ -31,7 +33,6 @@ func (nl *NotLogin) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 // Main update function.
 func (nl *NotLogin) GetUpdate(m *tui.Model, msg tea.Msg) (tm tea.Model, tcmd tea.Cmd) {
 	// Add header.
-
 	nl.updateChoices(m, msg)
 	tm, tcmd = GetDefaulUpdate(m, msg)
 	return tm, tcmd
@@ -40,7 +41,7 @@ func (nl *NotLogin) GetUpdate(m *tui.Model, msg tea.Msg) (tm tea.Model, tcmd tea
 // The main view, which just calls the appropriate sub-view
 func (nl *NotLogin) GetView(m *tui.Model) string {
 	s := strings.Builder{}
-	s.WriteString(GetHeaderView())
+	s.WriteString(GetHeaderView(nl.BuildVersion, nl.BuilDate))
 	if m.Quitting {
 		s.WriteString("\n  See you later!\n\n")
 	}

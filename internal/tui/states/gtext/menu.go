@@ -16,10 +16,12 @@ var _ tui.State = (*GtextMenu)(nil)
 type GtextMenu struct {
 	Choices []string
 	Choice  int
+	BuildVersion string
+	BuilDate     string
 }
 
-func NewGtextMenu() *GtextMenu {
-	return &GtextMenu{Choices: []string{"Add NEW Gtext", "List and view text"}}
+func NewGtextMenu(buildVersion, buildData string) *GtextMenu {
+	return &GtextMenu{BuildVersion: buildVersion, BuilDate: buildData,Choices: []string{"Add NEW Gtext", "List and view text"}}
 }
 
 // Init is the first function that will be called. It returns an optional
@@ -66,7 +68,7 @@ func (lm *GtextMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 // The main view, which just calls the appropriate sub-view
 func (lm *GtextMenu) GetView(m *tui.Model) string {
 	s := strings.Builder{}
-	s.WriteString(states.GetHeaderView())
+	s.WriteString(states.GetHeaderView(lm.BuildVersion, lm.BuilDate))
 
 	s.WriteString(lm.choicesRegister(m))
 

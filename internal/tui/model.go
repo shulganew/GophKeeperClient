@@ -142,7 +142,7 @@ func (m *Model) ChangeState(current, next int, isUpdate bool, updateID *string) 
 	// Preloading data to memory model.
 	switch m.CurrentState {
 	case SiteList:
-		sites, status, err := client.SiteList(m.Client, m.Conf, m.JWT)
+		sites, status, err := client.SiteList(m.Client, m.JWT)
 		if err != nil {
 			zap.S().Errorln("Can't loading user's site data: ", err)
 			break
@@ -154,7 +154,7 @@ func (m *Model) ChangeState(current, next int, isUpdate bool, updateID *string) 
 		m.SetSites(sites)
 		zap.S().Infoln("Set sites from server: ", len(sites))
 	case CardList:
-		cards, status, err := client.CardsList(m.Client, m.Conf, m.JWT)
+		cards, status, err := client.CardsList(m.Client, m.JWT)
 		if err != nil {
 			zap.S().Errorln("Can't loading user's cards data: ", err)
 			break
@@ -166,7 +166,7 @@ func (m *Model) ChangeState(current, next int, isUpdate bool, updateID *string) 
 		m.SetCards(cards)
 		zap.S().Infoln("Set sites from server: ", len(cards))
 	case GtextList:
-		gtext, status, err := client.GtextList(m.Client, m.Conf, m.JWT)
+		gtext, status, err := client.GtextList(m.Client,  m.JWT)
 		if err != nil {
 			zap.S().Errorln("Can't loading user's gtext data: ", err)
 			break
@@ -178,7 +178,7 @@ func (m *Model) ChangeState(current, next int, isUpdate bool, updateID *string) 
 		m.SetGtext(gtext)
 		zap.S().Infoln("Set sites from server: ", len(gtext))
 	case GfileList:
-		gfile, status, err := client.GfileList(m.Client, m.Conf, m.JWT)
+		gfile, status, err := client.GfileList(m.Client, m.JWT)
 		if err != nil {
 			zap.S().Errorln("Can't loading user's gtext data: ", err)
 			break

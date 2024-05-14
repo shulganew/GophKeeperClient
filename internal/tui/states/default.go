@@ -30,8 +30,8 @@ func GetDefaulUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // Default header.
-func GetHeaderView() string {
-	return styles.GopherHeader.Render(fmt.Sprintf("GopherKeeper client, build version: 1.0.0, pid %d \n\n", os.Getpid()))
+func GetHeaderView(version, date string) string {
+	return styles.GopherHeader.Render(fmt.Sprintf("GopherKeeper client, build version: %s (%s), pid %d \n\n", version, date, os.Getpid()))
 
 }
 
