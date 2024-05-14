@@ -1,59 +1,36 @@
 package client
 
 import (
-	"bytes"
-	"database/sql"
-	"encoding/json"
+	"context"
 	"net/http"
-	"net/url"
 	"strings"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
-	"github.com/shulganew/GophKeeperClient/internal/entities"
+	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 	"go.uber.org/zap"
 )
 
-func UserLogin(conf config.Config, login, pw string) (user *entities.User, status int, err error) {
-	// Create user.
-	user = &entities.User{Login: login, Password: pw}
-	// Encode to json.
-	bodyUser := bytes.NewBuffer([]byte{})
-	err = json.NewEncoder(bodyUser).Encode(&user)
+func UserLogin(c *oapi.Client, conf config.Config, login, pw string) (user *oapi.NewUser, jwt string, status int, err error) {
+	// Create OAPI user.
+	user = &oapi.NewUser{Login: login, Password: pw}
+	resp, err := c.Login(context.Background(), *user)
 	if err != nil {
-		return nil, http.StatusInternalServerError, err
-	}
-
-	// Make requset to server.
-	url := url.URL{Scheme: config.Shema, Host: conf.Address, Path: config.LoginPath}
-	zap.S().Debugln("Login URL: ", url)
-
-	client := resty.New()
-	res, err := client.R().
-		SetBody(bodyUser).
-		SetHeader("Content-Type", "application/json").
-		Post(url.String())
-	if err != nil {
-		return nil, http.StatusInternalServerError, err
+		return nil, "", http.StatusInternalServerError, err
 	}
 
 	// Print to log file for debug level.
-	for k, v := range res.Header() {
+	for k, v := range resp.Header {
 		zap.S().Debugf("%s: %v\r\n", k, v[0])
 	}
 
-	zap.S().Debugln("Body: ", string(res.Body()))
-	zap.S().Debugf("Status Code: %d\r\n", res.StatusCode)
-	authHeader := res.Header().Get("Authorization")
+	zap.S().Debugf("Status Code: %d\r\n", resp.StatusCode)
+
+	// Get JWT token and save to User
+	authHeader := resp.Header.Get("Authorization")
 	zap.S().Debugln("authHeader: ", authHeader)
 	if strings.HasPrefix(authHeader, authPrefix) {
-		jwt := authHeader[len(authPrefix):]
-		user.JWT = sql.NullString{String: jwt, Valid: true}
-	} else {
-		user.JWT = sql.NullString{String: "", Valid: false}
+		jwt = authHeader[len(authPrefix):]
 	}
-
-	zap.S().Infoln(user.JWT, user.Login, user.Password)
-	return user, res.StatusCode(), nil
-
+	zap.S().Infoln(jwt, user.Login, user.Password)
+	return user, jwt, resp.StatusCode, nil
 }

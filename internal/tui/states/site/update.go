@@ -1,6 +1,7 @@
 package site
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -13,22 +14,25 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ tui.State = (*SiteAdd)(nil)
+// Implemet State.
+var _ tui.State = (*SiteUpdate)(nil)
 
-const InputsSitesLogin = 4
+const InputsSitesUpdate = 4
 
+// SiteUpdate, state 2
 // Inputs: login, email, pw, pw (check corret input)
-type SiteAdd struct {
+type SiteUpdate struct {
 	focusIndex  int
 	Inputs      []textinput.Model
+	updateID    string
 	ansver      bool  // Add info message if servier send answer.
 	IsAddOk     bool  // Successful registration.
 	ansverCode  int   // Servier answer code.
 	ansverError error // Servier answer error.
 }
 
-func NewSiteAdd() *SiteAdd {
-	rf := SiteAdd{
+func NewSiteUpdate() *SiteUpdate {
+	rf := SiteUpdate{
 		Inputs: make([]textinput.Model, InputsSitesLogin),
 	}
 
@@ -44,22 +48,18 @@ func NewSiteAdd() *SiteAdd {
 			t.Focus()
 			t.PromptStyle = styles.FocusedStyle
 			t.TextStyle = styles.FocusedStyle
-			t.SetValue("My bank site")
 		case 1:
 			t.Placeholder = "https://mysite.ru"
 			t.PromptStyle = styles.NoStyle
 			t.TextStyle = styles.NoStyle
-			t.SetValue("https://mysite.ru")
 		case 2:
 			t.Placeholder = "login"
 			t.PromptStyle = styles.NoStyle
 			t.TextStyle = styles.NoStyle
-			t.SetValue("scaevol@yandex.ru")
 		case 3:
 			t.Placeholder = "Password"
 			t.EchoMode = textinput.EchoPassword
 			t.EchoCharacter = '•'
-			t.SetValue("123")
 		}
 		rf.Inputs[i] = t
 	}
@@ -68,11 +68,24 @@ func NewSiteAdd() *SiteAdd {
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (rf *SiteAdd) GetInit(m *tui.Model, updateID *string) tea.Cmd {
+func (rf *SiteUpdate) GetInit(m *tui.Model, updateID *string) tea.Cmd {
+	if updateID != nil {
+		rf.updateID = *updateID
+	} else {
+		rf.ansver = true
+		rf.ansverError = errors.New("can't find update id")
+	}
+	// Init fields.
+	site := m.Sites[rf.updateID]
+	rf.Inputs[0].SetValue(site.Definition)
+	rf.Inputs[1].SetValue(site.Site)
+	rf.Inputs[2].SetValue(site.Slogin)
+	rf.Inputs[3].SetValue(site.Spw)
+
 	return textinput.Blink
 }
 
-func (rf *SiteAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func (rf *SiteUpdate) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -100,18 +113,17 @@ func (rf *SiteAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			// If user adding done success, enter for continue...
 			if rf.IsAddOk {
 				rf.cleanform()
-				m.ChangeState(tui.SiteAdd, tui.MainMenu, false, nil)
+				m.ChangeState(tui.SiteUpdate, tui.SiteList, false, nil)
 				return m, nil
 			}
 			// Submit button pressed!
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
 				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value(), rf.Inputs[3].Value())
-				// TODO : save site memory storage.
-				_, status, err := client.SiteAdd(m.Client, m.Conf, m.JWT, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value(), rf.Inputs[3].Value())
+				status, err := client.SiteUpdate(m.Client, m.Conf, m.JWT, rf.updateID, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value(), rf.Inputs[3].Value())
 				rf.ansver = true
 				rf.ansverCode = status
 				rf.ansverError = err
-				if status == http.StatusCreated {
+				if status == http.StatusOK {
 					rf.IsAddOk = true
 					return m, nil
 				}
@@ -158,7 +170,7 @@ func (rf *SiteAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // The main view, which just calls the appropriate sub-view
-func (rf *SiteAdd) GetView(m *tui.Model) string {
+func (rf *SiteUpdate) GetView(m *tui.Model) string {
 	var b strings.Builder
 	b.WriteString("\n")
 	b.WriteString(styles.GopherQuestion.Render("Add new sited with login and password:\n"))
@@ -200,7 +212,7 @@ func (rf *SiteAdd) GetView(m *tui.Model) string {
 }
 
 // Help functions
-func (rf *SiteAdd) updateInputs(msg tea.Msg) tea.Cmd {
+func (rf *SiteUpdate) updateInputs(msg tea.Msg) tea.Cmd {
 	cmds := make([]tea.Cmd, len(rf.Inputs))
 
 	// Only text inputs with Focus() set will respond, so it's safe to simply
@@ -213,9 +225,10 @@ func (rf *SiteAdd) updateInputs(msg tea.Msg) tea.Cmd {
 }
 
 // Reset all inputs and form errors.
-func (rf *SiteAdd) cleanform() {
+func (rf *SiteUpdate) cleanform() {
 	rf.ansver = false
 	rf.IsAddOk = false
 	rf.ansverCode = 0
 	rf.ansverError = nil
+	rf.updateID = ""
 }

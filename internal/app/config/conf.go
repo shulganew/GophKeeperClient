@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"net/url"
 	"os"
 	"time"
 
@@ -10,28 +11,28 @@ import (
 )
 
 const AuthPrefix = "Bearer "
-const RegisterPath = "/api/user/auth/register"
-const LoginPath = "/api/user/auth/login"
-const SiteAddPath = "/api/user/site/add"
-const Shema = "http"
+const Shema = "https"
 const TokenExp = time.Hour * 3600
 const DataBaseType = "postgres"
 
 type Config struct {
 	// flag -a, Server address
-	Address string
+	Address        string
+	FileSavingPath string
 }
 
 func InitConfig() *Config {
 	config := Config{}
 	// read command line argue
-	serverAddress := flag.String("a", "localhost:8080", "Service GKeeper address")
+	serverAddress := flag.String("a", "localhost:8443", "Service GKeeper address")
+	filePath := flag.String("f", "/home/igor/files/", "Service GKeeper address")
 	flag.Parse()
 
 	// Check and parse URL
 	startaddr, startport := validators.CheckURL(*serverAddress)
 	// Server address
-	config.Address = startaddr + ":" + startport
+	u := url.URL{Scheme: Shema, Host: startaddr + ":" + startport}
+	config.Address = u.String()
 
 	// read OS ENVs
 	addr, exist := os.LookupEnv(("RUN_ADDRESS"))
@@ -44,6 +45,7 @@ func InitConfig() *Config {
 		zap.S().Infoln("Env var RUN_ADDRESS not found, use default", config.Address)
 	}
 
+	config.FileSavingPath = *filePath
 	zap.S().Infoln("Configuration complite")
 	return &config
 }

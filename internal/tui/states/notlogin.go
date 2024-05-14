@@ -18,13 +18,13 @@ type NotLogin struct {
 	Choice  int
 }
 
-func NewNotLogin() NotLogin {
-	return NotLogin{Choices: []string{"Log In", "Sign Up"}}
+func NewNotLogin() *NotLogin {
+	return &NotLogin{Choices: []string{"Log In", "Sign Up"}}
 }
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (nl *NotLogin) GetInit() tea.Cmd {
+func (nl *NotLogin) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return nil
 }
 
@@ -72,10 +72,10 @@ func (nl *NotLogin) updateChoices(m *tui.Model, msg tea.Msg) {
 			switch nl.Choice {
 			// Log in
 			case 0:
-				m.ChangeState(tui.NotLoginMenu, tui.LoginForm)
+				m.ChangeState(tui.NotLoginMenu, tui.LoginForm, false, nil)
 				// Sign up
 			case 1:
-				m.ChangeState(tui.NotLoginMenu, tui.SignUpForm)
+				m.ChangeState(tui.NotLoginMenu, tui.RegisterForm, false, nil)
 			}
 
 		}
@@ -85,14 +85,16 @@ func (nl *NotLogin) updateChoices(m *tui.Model, msg tea.Msg) {
 
 // Choosing menu.
 func (nl *NotLogin) choicesRegister() string {
-	s := strings.Builder{}
-	s.WriteString("\n")
-	s.WriteString(styles.GopherQuestion.Render("You are not authorized, Log In or Sign Up:"))
-	s.WriteString("\n\n")
+	b := strings.Builder{}
+	b.WriteString("\n")
+	b.WriteString(styles.GopherQuestion.Render("You are not authorized, Log In or Sign Up:"))
+	b.WriteString("\n\n")
 	for i := 0; i < len(nl.Choices); i++ {
-		s.WriteString(Checkbox(nl.Choices[i], nl.Choice == i))
-		s.WriteString("\n")
+		b.WriteString(Checkbox(nl.Choices[i], nl.Choice == i))
+		b.WriteString("\n")
 	}
 
-	return s.String()
+	str := b.String()
+	b.Reset()
+	return str
 }

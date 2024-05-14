@@ -1,12 +1,23 @@
 package app
 
 import (
+	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"log"
+	"net"
+	"net/http"
+	"os"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/shulganew/GophKeeperClient/internal/app/backup"
 	"github.com/shulganew/GophKeeperClient/internal/app/config"
+	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states"
-	"github.com/shulganew/GophKeeperClient/internal/tui/states/ccard"
+	"github.com/shulganew/GophKeeperClient/internal/tui/states/card"
+	"github.com/shulganew/GophKeeperClient/internal/tui/states/gfile"
+	"github.com/shulganew/GophKeeperClient/internal/tui/states/gtext"
 	"github.com/shulganew/GophKeeperClient/internal/tui/states/site"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -49,14 +60,23 @@ func InitLog() zap.SugaredLogger {
 }
 
 func InitModel(conf config.Config) tea.Model {
+
+	// Client with TLS session.
+	c, err := oapi.NewClient(conf.Address, oapi.WithHTTPClient(getTLSClietn()))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Load User from backup
 	cSate := tui.MainMenu
 	user, err := backup.LoadUser()
 	if err != nil {
 		zap.S().Infoln("Saved user not found.")
 		cSate = tui.NotLoginMenu
+		user = &backup.BackupData{}
 	}
-	zap.S().Infoln("Start menu: ", cSate)
+
+	zap.S().Debugln("Start menu: ", cSate)
 	//
 	// Menu: Init Not Login, state 0.
 	//
@@ -72,18 +92,55 @@ func InitModel(conf config.Config) tea.Model {
 	//
 	// Menu: Save site's login and passwords. 4
 	//
-	lm4 := site.NewLoginMenu()
+	lm4 := site.NewSietMenu()
 	// List site's login and passwords 5
-	ll5 := site.NewListLogin()
+	sl5 := site.NewSiteList()
 	// Add site's login and passwords 6
-	al6 := site.NewAddLogin()
-	// TODO 7-10  temp chops
-	stub7 := states.NewMainMenu()
-	stub8 := states.NewMainMenu()
-	stub9 := states.NewMainMenu()
-	stub10 := states.NewMainMenu()
-	// Add site's login and passwords 11
-	ca11 := ccard.NewCardAdd()
+	al6 := site.NewSiteAdd()
 
-	return tui.Model{Conf: conf, CurrentState: cSate, States: []tui.State{&nl0, &lf1, &rf2, &mm3, &lm4, &ll5, &al6, &stub7, &stub8, &stub9, &stub10, &ca11}, User: user}
+	siteU7 := site.NewSiteUpdate()
+	// Card menu
+	cm8 := card.NewCardMenu()
+	ca9 := card.NewCardAdd()
+	cl10 := card.NewCardList()
+	cu11 := card.NewCardUpdate()
+
+	// Text menu
+	mg12 := gtext.NewGtextMenu()
+	gta13 := gtext.NewGtextAdd()
+	gtl14 := gtext.NewGtextList()
+	gtup15 := gtext.NewGtextUpdate()
+
+	// Text menu
+	gm16 := gfile.NewGfileMenu()
+	gm17 := gfile.NewFileAdd()
+	gtl18 := gfile.NewGfileList(conf.FileSavingPath)
+
+	// TODO make transfer object and Model constructor
+	states := []tui.State{nl0, lf1, rf2, mm3, lm4, sl5, al6, siteU7, cm8, ca9, cl10, cu11, mg12, gta13, gtl14, gtup15, gm16, gm17, gtl18}
+	return tui.Model{Conf: conf, Client: c, User: &user.NewUser, JWT: user.JWT, CurrentState: cSate, States: states}
+}
+
+func getTLSClietn() *http.Client {
+	caCertf, _ := os.ReadFile("./cert/server.crt")
+	rootCAs, _ := x509.SystemCertPool()
+	// handle case where rootCAs == nil and create an empty pool...
+	if ok := rootCAs.AppendCertsFromPEM(caCertf); !ok {
+		zap.S().Infoln("Can't load trasted sertifecate!")
+	}
+
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+		RootCAs:            rootCAs,
+	}
+
+	hc := &http.Client{
+		Transport: &http.Transport{
+			DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				conn, err := tls.Dial(network, addr, tlsConfig)
+				return conn, err
+			},
+		},
+	}
+	return hc
 }

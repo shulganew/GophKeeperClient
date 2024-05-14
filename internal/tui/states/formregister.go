@@ -1,6 +1,7 @@
 package states
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -30,7 +31,7 @@ type RegisterForm struct {
 	ansverError error // Servier answer error.
 }
 
-func NewRegisterForm() RegisterForm {
+func NewRegisterForm() *RegisterForm {
 	rf := RegisterForm{
 		Inputs: make([]textinput.Model, InputsRegister),
 	}
@@ -63,12 +64,12 @@ func NewRegisterForm() RegisterForm {
 		rf.Inputs[i] = t
 	}
 
-	return rf
+	return &rf
 }
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (rf *RegisterForm) GetInit() tea.Cmd {
+func (rf *RegisterForm) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return textinput.Blink
 }
 
@@ -79,10 +80,10 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 		case "ctrl+c", "esc":
 			rf.cleanform()
 			if m.IsUserLogedIn {
-				m.ChangeState(tui.SignUpForm, tui.MainMenu)
+				m.ChangeState(tui.RegisterForm, tui.MainMenu, false, nil)
 				return m, nil
 			}
-			m.ChangeState(tui.SignUpForm, tui.NotLoginMenu)
+			m.ChangeState(tui.RegisterForm, tui.NotLoginMenu, false, nil)
 			return m, nil
 		case "insert":
 			// Hide or show password.
@@ -101,23 +102,25 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 			// If user registration done, enter for continue...
 			if rf.IsRegOk {
 				rf.cleanform()
-				m.ChangeState(tui.SignUpForm, tui.MainMenu)
+				m.ChangeState(tui.RegisterForm, tui.MainMenu, false, nil)
 				return m, nil
 			}
 			// Submit button pressed!
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
 
 				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
-				user, status, err := client.UserReg(m.Conf, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
+				user, jwt, status, err := client.UserReg(m.Client, context.Background(), m.Conf, rf.Inputs[0].Value(), rf.Inputs[2].Value(), rf.Inputs[1].Value())
 				rf.ansver = true
 				rf.ansverCode = status
 				rf.ansverError = err
-				if status == http.StatusOK {
+				if status == http.StatusCreated {
 					rf.IsRegOk = true
 					// Save current user to model.
 					m.User = user
+					// Save given token.
+					m.JWT = jwt
 					// Backup curent user.
-					err = backup.SaveUser(*user)
+					err = backup.SaveUser(*user, m.JWT)
 					if err != nil {
 						zap.S().Errorln("Can't save user: ", err)
 					}
@@ -184,7 +187,7 @@ func (rf *RegisterForm) GetView(m *tui.Model) string {
 	}
 	fmt.Fprintf(&b, "\n\n%s\n\n", *button)
 	if rf.ansver {
-		if rf.ansverCode == http.StatusOK {
+		if rf.ansverCode == http.StatusCreated {
 			b.WriteString(styles.OkStyle1.Render("User registerd successful: ", m.User.Login))
 			b.WriteString("\n\n")
 			b.WriteString(styles.GopherQuestion.Render("Press <Enter> to continue... "))
@@ -202,7 +205,9 @@ func (rf *RegisterForm) GetView(m *tui.Model) string {
 	b.WriteString("\n\n")
 	b.WriteString(styles.HelpStyle.Render("<Insert> - show or hide password, <Esc> - back to menu."))
 
-	return b.String()
+	str := b.String()
+	b.Reset()
+	return str
 }
 
 // Help functions

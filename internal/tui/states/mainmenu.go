@@ -19,13 +19,13 @@ type MainMenu struct {
 	Choice  int
 }
 
-func NewMainMenu() MainMenu {
-	return MainMenu{Choices: []string{"Sites logins/pw", "Credit cards", "Secret text", "Sectret bin data", "Help", "Logout"}}
+func NewMainMenu() *MainMenu {
+	return &MainMenu{Choices: []string{"Sites logins/pw", "Credit cards", "Secret text", "Sectret bin data", "Logout"}}
 }
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (mm *MainMenu) GetInit() tea.Cmd {
+func (mm *MainMenu) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return nil
 }
 
@@ -51,19 +51,27 @@ func (mm *MainMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch mm.Choice {
 			// Site's login and passes.
 			case 0:
-				m.ChangeState(tui.MainMenu, tui.LoginMenu)
+				m.ChangeState(tui.MainMenu, tui.SiteMenu, false, nil)
 				return m, nil
 				// Credit cards.
 			case 1:
-				m.ChangeState(tui.MainMenu, tui.CcardAdd)
+				m.ChangeState(tui.MainMenu, tui.CardMenu, false, nil)
+				return m, nil
+				// Goph text.
+			case 2:
+				m.ChangeState(tui.MainMenu, tui.GtextMenu, false, nil)
+				return m, nil
+				// Goph files.
+			case 3:
+				m.ChangeState(tui.MainMenu, tui.GfileMenu, false, nil)
 				return m, nil
 
-			case 5:
+			case 4:
 				err := backup.CleanData()
 				if err != nil {
 					zap.S().Errorln("Error clean user's tmp file: ", err)
 				}
-				m.ChangeState(tui.MainMenu, tui.NotLoginMenu)
+				m.ChangeState(tui.MainMenu, tui.NotLoginMenu, false, nil)
 				return m, nil
 			}
 		}
@@ -90,17 +98,19 @@ func (mm *MainMenu) GetView(m *tui.Model) string {
 //
 // Choosing menu.
 func (mm *MainMenu) choicesRegister(m *tui.Model) string {
-	s := strings.Builder{}
-	s.WriteString("\n")
-	s.WriteString(styles.GopherQuestion.Render("Hello, ", m.User.Login, ", choose your secters:"))
-	s.WriteString("\n\n")
+	b := strings.Builder{}
+	b.WriteString("\n")
+	b.WriteString(styles.GopherQuestion.Render("Hello, ", m.User.Login, ", choose your secters:"))
+	b.WriteString("\n\n")
 	for i := 0; i < len(mm.Choices); i++ {
-		s.WriteString(Checkbox(mm.Choices[i], mm.Choice == i))
-		s.WriteString("\n")
+		b.WriteString(Checkbox(mm.Choices[i], mm.Choice == i))
+		b.WriteString("\n")
 		// Add Help and logout Separator
-		if len(mm.Choices)-3 == i {
-			s.WriteString("\n")
+		if len(mm.Choices)-2 == i {
+			b.WriteString("\n")
 		}
 	}
-	return s.String()
+	str := b.String()
+	b.Reset()
+	return str
 }

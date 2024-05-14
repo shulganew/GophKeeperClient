@@ -5,11 +5,17 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/shulganew/GophKeeperClient/internal/entities"
+	"github.com/shulganew/GophKeeperClient/internal/client/oapi"
 )
 
+type BackupData struct {
+	oapi.NewUser
+	JWT string `json: "jwt"`
+}
+
+// TODO - save JWT, not user.
 // Backup current User to tmp file.
-func SaveUser(u entities.User) error {
+func SaveUser(u oapi.NewUser, jwt string) error {
 	// Save user to file.
 	file, error := os.OpenFile(getBackupPath(), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if error != nil {
@@ -17,7 +23,9 @@ func SaveUser(u entities.User) error {
 	}
 	defer file.Close()
 
-	data, err := json.Marshal(u)
+	// Create backup user.
+	user := BackupData{u, jwt}
+	data, err := json.Marshal(user)
 	if err != nil {
 		return err
 	}
@@ -26,12 +34,12 @@ func SaveUser(u entities.User) error {
 }
 
 // Load backup User from tmp file.
-func LoadUser() (user *entities.User, err error) {
+func LoadUser() (user *BackupData, err error) {
 	file, err := os.Open(getBackupPath())
 	if err != nil {
 		return nil, err
 	}
-	u := &entities.User{}
+	u := &BackupData{}
 	err = json.NewDecoder(file).Decode(u)
 	if err != nil {
 		return nil, err

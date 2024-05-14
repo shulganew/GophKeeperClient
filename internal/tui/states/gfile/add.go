@@ -1,4 +1,4 @@
-package site
+package gfile
 
 import (
 	"fmt"
@@ -13,12 +13,14 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ tui.State = (*SiteAdd)(nil)
+// Implemet State.
+var _ tui.State = (*FileAdd)(nil)
 
-const InputsSitesLogin = 4
+const InputsGfile = 2
 
+// FileAdd
 // Inputs: login, email, pw, pw (check corret input)
-type SiteAdd struct {
+type FileAdd struct {
 	focusIndex  int
 	Inputs      []textinput.Model
 	ansver      bool  // Add info message if servier send answer.
@@ -27,9 +29,9 @@ type SiteAdd struct {
 	ansverError error // Servier answer error.
 }
 
-func NewSiteAdd() *SiteAdd {
-	rf := SiteAdd{
-		Inputs: make([]textinput.Model, InputsSitesLogin),
+func NewFileAdd() *FileAdd {
+	rf := FileAdd{
+		Inputs: make([]textinput.Model, InputsGfile),
 	}
 
 	var t textinput.Model
@@ -44,22 +46,13 @@ func NewSiteAdd() *SiteAdd {
 			t.Focus()
 			t.PromptStyle = styles.FocusedStyle
 			t.TextStyle = styles.FocusedStyle
-			t.SetValue("My bank site")
+			t.SetValue("My sectet file")
 		case 1:
-			t.Placeholder = "https://mysite.ru"
+			t.Placeholder = "/home/myfile.txt"
 			t.PromptStyle = styles.NoStyle
 			t.TextStyle = styles.NoStyle
-			t.SetValue("https://mysite.ru")
-		case 2:
-			t.Placeholder = "login"
-			t.PromptStyle = styles.NoStyle
-			t.TextStyle = styles.NoStyle
-			t.SetValue("scaevol@yandex.ru")
-		case 3:
-			t.Placeholder = "Password"
-			t.EchoMode = textinput.EchoPassword
-			t.EchoCharacter = '•'
-			t.SetValue("123")
+			t.SetValue("/home/igor/gfile.txt")
+
 		}
 		rf.Inputs[i] = t
 	}
@@ -68,31 +61,23 @@ func NewSiteAdd() *SiteAdd {
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (rf *SiteAdd) GetInit(m *tui.Model, updateID *string) tea.Cmd {
+func (rf *FileAdd) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return textinput.Blink
 }
 
-func (rf *SiteAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func (rf *FileAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
 			rf.cleanform()
 			if m.IsUserLogedIn {
-				m.ChangeState(tui.SiteAdd, tui.NotLoginMenu, false, nil)
+				m.ChangeState(tui.GfileAdd, tui.NotLoginMenu, false, nil)
 				return m, nil
 			}
-			m.ChangeState(tui.SiteAdd, tui.MainMenu, false, nil)
+			m.ChangeState(tui.GfileAdd, tui.GfileMenu, false, nil)
 			return m, nil
-		case "insert":
-			// Hide or show password.
-			if rf.Inputs[2].EchoMode == textinput.EchoPassword {
-				rf.Inputs[2].EchoMode = textinput.EchoNormal
-			} else {
-				rf.Inputs[2].EchoMode = textinput.EchoPassword
-			}
-			return m, nil
-		// Set focus to next input
+
 		case "tab", "shift+tab", "enter", "up", "down":
 			// Clean shown errors in menu.
 			rf.ansver = false
@@ -100,14 +85,14 @@ func (rf *SiteAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			// If user adding done success, enter for continue...
 			if rf.IsAddOk {
 				rf.cleanform()
-				m.ChangeState(tui.SiteAdd, tui.MainMenu, false, nil)
+				m.ChangeState(tui.GfileAdd, tui.GfileMenu, false, nil)
 				return m, nil
 			}
 			// Submit button pressed!
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
-				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value(), rf.Inputs[3].Value())
-				// TODO : save site memory storage.
-				_, status, err := client.SiteAdd(m.Client, m.Conf, m.JWT, rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value(), rf.Inputs[3].Value())
+				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value())
+
+				status, err := client.FileAdd(m.Client, m.Conf, m.JWT, rf.Inputs[0].Value(), rf.Inputs[1].Value())
 				rf.ansver = true
 				rf.ansverCode = status
 				rf.ansverError = err
@@ -153,15 +138,14 @@ func (rf *SiteAdd) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Handle character input and blinking
 	cmd := rf.updateInputs(msg)
-
 	return m, cmd
 }
 
 // The main view, which just calls the appropriate sub-view
-func (rf *SiteAdd) GetView(m *tui.Model) string {
+func (rf *FileAdd) GetView(m *tui.Model) string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(styles.GopherQuestion.Render("Add new sited with login and password:\n"))
+	b.WriteString(styles.GopherQuestion.Render("Add new file to secret storage:\n"))
 	b.WriteString("\n")
 	for i := range rf.Inputs {
 		b.WriteString(rf.Inputs[i].View())
@@ -177,7 +161,7 @@ func (rf *SiteAdd) GetView(m *tui.Model) string {
 	fmt.Fprintf(&b, "\n\n%s\n\n", *button)
 	if rf.ansver {
 		if rf.ansverCode == http.StatusCreated {
-			b.WriteString(styles.OkStyle1.Render("Site info successfuly added: ", m.User.Login))
+			b.WriteString(styles.OkStyle1.Render("File successfuly added: ", m.User.Login))
 			b.WriteString("\n\n")
 			b.WriteString(styles.GopherQuestion.Render("Press <Enter> to continue... "))
 			b.WriteString("\n\n")
@@ -192,7 +176,7 @@ func (rf *SiteAdd) GetView(m *tui.Model) string {
 	}
 
 	b.WriteString("\n\n")
-	b.WriteString(styles.HelpStyle.Render("<Insert> - show or hide password, <Esc> - back to menu."))
+	b.WriteString(styles.HelpStyle.Render("<Esc> - back to menu."))
 
 	str := b.String()
 	b.Reset()
@@ -200,7 +184,7 @@ func (rf *SiteAdd) GetView(m *tui.Model) string {
 }
 
 // Help functions
-func (rf *SiteAdd) updateInputs(msg tea.Msg) tea.Cmd {
+func (rf *FileAdd) updateInputs(msg tea.Msg) tea.Cmd {
 	cmds := make([]tea.Cmd, len(rf.Inputs))
 
 	// Only text inputs with Focus() set will respond, so it's safe to simply
@@ -213,7 +197,7 @@ func (rf *SiteAdd) updateInputs(msg tea.Msg) tea.Cmd {
 }
 
 // Reset all inputs and form errors.
-func (rf *SiteAdd) cleanform() {
+func (rf *FileAdd) cleanform() {
 	rf.ansver = false
 	rf.IsAddOk = false
 	rf.ansverCode = 0

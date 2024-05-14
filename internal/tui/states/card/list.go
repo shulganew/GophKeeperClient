@@ -1,4 +1,4 @@
-package site
+package card
 
 import (
 	"fmt"
@@ -16,64 +16,65 @@ import (
 )
 
 // Implemet State.
-var _ tui.State = (*SiteList)(nil)
+var _ tui.State = (*CardList)(nil)
 
-type Site oapi.Site
+type Card oapi.Card
 
-func (s Site) Title() string {
-	return fmt.Sprintf("%s ◉ %s", s.Definition, s.Site)
+func (c Card) Title() string {
+	return fmt.Sprintf("%s ◉ %s", c.Definition, c.Ccn)
 }
-func (s Site) Description() string {
-	return fmt.Sprintf("%s ◉ %s", s.Slogin, s.Spw)
+func (c Card) Description() string {
+	return fmt.Sprintf("%s ◉ %s ◉ %s", c.Hld, c.Exp, c.Cvv)
 }
-func (s Site) FilterValue() string { return s.Site }
+func (c Card) FilterValue() string { return c.Definition }
 
-type SiteList struct {
+type CardList struct {
 	list list.Model
 }
 
-// SiteList, state 7
+// CardList, state 10
 // List saved site credentials.
-func NewSiteList() *SiteList {
+func NewCardList() *CardList {
 	// Create empty list items
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
-	l.Title = "Sites login and passowrds. <ctrl+u> - update, <ctrl+d> - delete"
-	sl := SiteList{list: l}
+	l.Title = "My bank cards. <ctrl+u> - update, <ctrl+d> - delete"
+	cl := CardList{list: l}
 	// Fix terminal bag.
 	tw, th, _ := term.GetSize(int(os.Stdout.Fd()))
 	h, v := styles.ListStyle.GetFrameSize()
-	sl.list.SetSize(tw-h, th-v)
-	return &sl
+	cl.list.SetSize(tw-h, th-v)
+	return &cl
 }
 
 // Init is the first function that wisl be casled. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (sl *SiteList) GetInit(m *tui.Model, updateID *string) tea.Cmd {
+func (sl *CardList) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return nil
 }
 
-func (sl *SiteList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func (sl *CardList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
-			m.ChangeState(tui.SiteList, tui.MainMenu, false, nil)
+			m.ChangeState(tui.CardList, tui.CardMenu, false, nil)
 			return m, nil
 		case "ctrl+u":
-			siteID := sl.list.SelectedItem().(Site).SiteID
-			m.ChangeState(tui.SiteList, tui.SiteUpdate, true, &siteID)
+			cardID := sl.list.SelectedItem().(Card).CardID
+			m.ChangeState(tui.CardList, tui.CardUpdate, true, &cardID)
 			return m, nil
 		case "ctrl+d":
-			siteID := sl.list.SelectedItem().(Site).SiteID
-			// Delete site.
-			status, err := client.Delete(m.Client, m.Conf, m.JWT, siteID)
+			cardID := sl.list.SelectedItem().(Card).CardID
+			// Delete card.
+			status, err := client.Delete(m.Client, m.Conf, m.JWT, cardID)
 			if err == nil && status == http.StatusOK {
-				delete(m.Sites, siteID)
+				delete(m.Cards, cardID)
 			}
 			return m, nil
 		case "enter":
-			zap.S().Infoln(sl.list.SelectedItem())
+			zap.S().Infoln(sl.list.SelectedItem().(Card).CardID)
 			return m, nil
+
 		}
 
 	case tea.WindowSizeMsg:
@@ -87,11 +88,11 @@ func (sl *SiteList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // The main view, which just casls the appropriate sub-view
-func (sl *SiteList) GetView(m *tui.Model) string {
+func (sl *CardList) GetView(m *tui.Model) string {
 	// Load sites from memory
 	listItems := []list.Item{}
-	for _, site := range m.Sites {
-		item := Site{SiteID: site.SiteID, Definition: site.Definition, Site: site.Site, Slogin: site.Slogin, Spw: site.Spw}
+	for _, card := range m.Cards {
+		item := Card{CardID: card.CardID, Definition: card.Definition, Ccn: card.Ccn, Cvv: card.Cvv, Exp: card.Exp, Hld: card.Hld}
 		listItems = append(listItems, item)
 	}
 	sl.list.SetItems(listItems)

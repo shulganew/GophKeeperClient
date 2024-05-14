@@ -1,4 +1,4 @@
-package site
+package gfile
 
 import (
 	"strings"
@@ -10,31 +10,32 @@ import (
 )
 
 // Implemet State.
-var _ tui.State = (*SiteMenu)(nil)
+var _ tui.State = (*GfileMenu)(nil)
 
-// Main site's login and password administration, state 4
-type SiteMenu struct {
+// Main gtext menu
+type GfileMenu struct {
 	Choices []string
 	Choice  int
 }
 
-func NewSietMenu() *SiteMenu {
-	return &SiteMenu{Choices: []string{"List/update/delete logins/pw", "Add NEW"}}
+func NewGfileMenu() *GfileMenu {
+	return &GfileMenu{Choices: []string{"Upload secret file data", "List and download"}}
 }
 
 // Init is the first function that will be called. It returns an optional
 // initial colmand. To not perform an initial colmand return nil.
-func (lm *SiteMenu) GetInit(m *tui.Model, updateID *string) tea.Cmd {
+func (lm *GfileMenu) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return nil
 }
 
 // Main update function.
-func (lm *SiteMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func (lm *GfileMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "esc":
-			m.ChangeState(tui.SiteMenu, tui.MainMenu, false, nil)
+			m.ChangeState(tui.GfileMenu, tui.MainMenu, false, nil)
+			return m, nil
 		case "down":
 			lm.Choice++
 			if lm.Choice > len(lm.Choices)-1 {
@@ -51,10 +52,10 @@ func (lm *SiteMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch lm.Choice {
 			// List logins/pw.
 			case 0:
-				m.ChangeState(tui.SiteMenu, tui.SiteList, false, nil)
+				m.ChangeState(tui.GfileMenu, tui.GfileAdd, false, nil)
 			// Add NEW.
 			case 1:
-				m.ChangeState(tui.SiteMenu, tui.SiteAdd, false, nil)
+				m.ChangeState(tui.GfileMenu, tui.GfileList, false, nil)
 			}
 			return m, nil
 		}
@@ -63,12 +64,10 @@ func (lm *SiteMenu) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // The main view, which just calls the appropriate sub-view
-func (lm *SiteMenu) GetView(m *tui.Model) string {
+func (lm *GfileMenu) GetView(m *tui.Model) string {
 	s := strings.Builder{}
 	s.WriteString(states.GetHeaderView())
-
 	s.WriteString(lm.choicesRegister(m))
-
 	s.WriteString(states.GetHelpView())
 	return s.String()
 }
@@ -76,10 +75,10 @@ func (lm *SiteMenu) GetView(m *tui.Model) string {
 // Method for working with views/
 //
 // Choosing menu.
-func (lm *SiteMenu) choicesRegister(m *tui.Model) string {
+func (lm *GfileMenu) choicesRegister(m *tui.Model) string {
 	s := strings.Builder{}
 	s.WriteString("\n")
-	s.WriteString(styles.GopherQuestion.Render(m.User.Login, ", yours site's logins and passw:"))
+	s.WriteString(styles.GopherQuestion.Render(m.User.Login, ", uplod files to secret storage or downlod from it:"))
 	s.WriteString("\n\n")
 	for i := 0; i < len(lm.Choices); i++ {
 		s.WriteString(states.Checkbox(lm.Choices[i], lm.Choice == i))

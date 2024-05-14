@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/shulganew/GophKeeperClient/internal/tui"
 	"github.com/shulganew/GophKeeperClient/internal/tui/styles"
 )
@@ -43,7 +44,9 @@ func GetHelpView() string {
 	s.WriteString(styles.SubtleStyle.Render("<Enter>: choose"))
 	s.WriteString(styles.DotStyle)
 	s.WriteString(styles.SubtleStyle.Render("<Esc>: quit"))
-	return s.String()
+	str := s.String()
+	s.Reset()
+	return str
 }
 
 // Switch checked menu in all menus

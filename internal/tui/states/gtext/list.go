@@ -1,9 +1,11 @@
-package site
+package gtext
 
 import (
+	"bufio"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -16,59 +18,58 @@ import (
 )
 
 // Implemet State.
-var _ tui.State = (*SiteList)(nil)
+var _ tui.State = (*GtextList)(nil)
 
-type Site oapi.Site
+type Gtext oapi.Gtext
 
-func (s Site) Title() string {
-	return fmt.Sprintf("%s ◉ %s", s.Definition, s.Site)
+func (g Gtext) Title() string {
+	return fmt.Sprint(g.Definition)
 }
-func (s Site) Description() string {
-	return fmt.Sprintf("%s ◉ %s", s.Slogin, s.Spw)
+func (g Gtext) Description() string {
+	return fmt.Sprint(g.Note)
 }
-func (s Site) FilterValue() string { return s.Site }
+func (g Gtext) FilterValue() string { return g.Definition }
 
-type SiteList struct {
+type GtextList struct {
 	list list.Model
 }
 
-// SiteList, state 7
-// List saved site credentials.
-func NewSiteList() *SiteList {
+// List saved gtext credentials.
+func NewGtextList() *GtextList {
 	// Create empty list items
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
-	l.Title = "Sites login and passowrds. <ctrl+u> - update, <ctrl+d> - delete"
-	sl := SiteList{list: l}
+	l.Title = "My secret notes. <ctrl+u> - update, <ctrl+d> - delete"
+	cl := GtextList{list: l}
 	// Fix terminal bag.
 	tw, th, _ := term.GetSize(int(os.Stdout.Fd()))
 	h, v := styles.ListStyle.GetFrameSize()
-	sl.list.SetSize(tw-h, th-v)
-	return &sl
+	cl.list.SetSize(tw-h, th-v)
+	return &cl
 }
 
 // Init is the first function that wisl be casled. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (sl *SiteList) GetInit(m *tui.Model, updateID *string) tea.Cmd {
+func (sl *GtextList) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return nil
 }
 
-func (sl *SiteList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
+func (sl *GtextList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "esc":
-			m.ChangeState(tui.SiteList, tui.MainMenu, false, nil)
+		case "ctrl+q", "esc":
+			m.ChangeState(tui.GtextList, tui.GtextMenu, false, nil)
 			return m, nil
 		case "ctrl+u":
-			siteID := sl.list.SelectedItem().(Site).SiteID
-			m.ChangeState(tui.SiteList, tui.SiteUpdate, true, &siteID)
+			gtextID := sl.list.SelectedItem().(Gtext).GtextID
+			m.ChangeState(tui.GtextList, tui.GtextUpdate, true, &gtextID)
 			return m, nil
 		case "ctrl+d":
-			siteID := sl.list.SelectedItem().(Site).SiteID
+			gtextID := sl.list.SelectedItem().(Gtext).GtextID
 			// Delete site.
-			status, err := client.Delete(m.Client, m.Conf, m.JWT, siteID)
+			status, err := client.Delete(m.Client, m.Conf, m.JWT, gtextID)
 			if err == nil && status == http.StatusOK {
-				delete(m.Sites, siteID)
+				delete(m.Gtext, gtextID)
 			}
 			return m, nil
 		case "enter":
@@ -87,14 +88,26 @@ func (sl *SiteList) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // The main view, which just casls the appropriate sub-view
-func (sl *SiteList) GetView(m *tui.Model) string {
-	// Load sites from memory
+func (sl *GtextList) GetView(m *tui.Model) string {
+	// Load gtexts from memory
 	listItems := []list.Item{}
-	for _, site := range m.Sites {
-		item := Site{SiteID: site.SiteID, Definition: site.Definition, Site: site.Site, Slogin: site.Slogin, Spw: site.Spw}
+	for _, text := range m.Gtext {
+		item := Gtext{GtextID: text.GtextID, Definition: text.Definition, Note: getNoteSecond(&text.Note)}
 		listItems = append(listItems, item)
 	}
 	sl.list.SetItems(listItems)
 
 	return styles.ListStyle.Render(sl.list.View())
+}
+
+// Return secord row from list text.
+func getNoteSecond(text *string) string {
+	scanner := bufio.NewScanner(strings.NewReader(*text))
+	// Skip first sentence.
+	scanner.Scan()
+	if scanner.Scan() {
+		return scanner.Text()
+	}
+
+	return "No header note."
 }

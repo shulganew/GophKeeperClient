@@ -22,20 +22,20 @@ var _ tui.State = (*LoginForm)(nil)
 // LoginForm, state 1
 type LoginForm struct {
 	focusIndex  int
-	Inputs      []textinput.Model
+	inputs      []textinput.Model
 	ansver      bool  // Add info message if servier send answer.
-	IsLogInOk   bool  // Successful registration.
+	isLogInOk   bool  // Successful registration.
 	ansverCode  int   // Servier answer code.
 	ansverError error // Servier answer error.
 }
 
-func NewLoginForm() LoginForm {
+func NewLoginForm() *LoginForm {
 	lf := LoginForm{
-		Inputs: make([]textinput.Model, inputsLogin),
+		inputs: make([]textinput.Model, inputsLogin),
 	}
 
 	var t textinput.Model
-	for i := range lf.Inputs {
+	for i := range lf.inputs {
 		t = textinput.New()
 		t.Cursor.Style = styles.CursorStyle
 		t.CharLimit = 32
@@ -53,14 +53,14 @@ func NewLoginForm() LoginForm {
 			t.EchoCharacter = '•'
 			t.SetValue("123")
 		}
-		lf.Inputs[i] = t
+		lf.inputs[i] = t
 	}
-	return lf
+	return &lf
 }
 
 // Init is the first function that will be called. It returns an optional
 // initial command. To not perform an initial command return nil.
-func (lf *LoginForm) GetInit() tea.Cmd {
+func (lf *LoginForm) GetInit(m *tui.Model, updateID *string) tea.Cmd {
 	return textinput.Blink
 }
 
@@ -71,10 +71,10 @@ func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "esc":
 			lf.cleanform()
 			if m.IsUserLogedIn {
-				m.ChangeState(tui.LoginForm, tui.MainMenu)
+				m.ChangeState(tui.LoginForm, tui.MainMenu, false, nil)
 				return m, nil
 			}
-			m.ChangeState(tui.LoginForm, tui.NotLoginMenu)
+			m.ChangeState(tui.LoginForm, tui.NotLoginMenu, false, nil)
 			return m, nil
 
 		// Set focus to next input
@@ -83,23 +83,24 @@ func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			lf.ansver = false
 			s := msg.String()
 			// Loged in, exit.
-			if lf.IsLogInOk {
+			if lf.isLogInOk {
 				lf.cleanform()
-				m.ChangeState(tui.LoginForm, tui.MainMenu)
+				m.ChangeState(tui.LoginForm, tui.MainMenu, false, nil)
 				return m, nil
 			}
 			// Submit button pressed!
-			if s == "enter" && lf.focusIndex == len(lf.Inputs) {
-				zap.S().Infof("Text inputs %s  %s", lf.Inputs[0].Value(), lf.Inputs[1].Value())
-				user, status, err := client.UserLogin(m.Conf, lf.Inputs[0].Value(), lf.Inputs[1].Value())
+			if s == "enter" && lf.focusIndex == len(lf.inputs) {
+				zap.S().Infof("Text inputs %s  %s", lf.inputs[0].Value(), lf.inputs[1].Value())
+				user, jwt, status, err := client.UserLogin(m.Client, m.Conf, lf.inputs[0].Value(), lf.inputs[1].Value())
 				lf.ansver = true
 				lf.ansverCode = status
 				lf.ansverError = err
 				if status == http.StatusOK {
-					lf.IsLogInOk = true
+					lf.isLogInOk = true
 					m.User = user
+					m.JWT = jwt
 					// Backup curent user.
-					err = backup.SaveUser(*user)
+					err = backup.SaveUser(*user, m.JWT)
 					if err != nil {
 						zap.S().Errorln("Can't save user: ", err)
 					}
@@ -116,25 +117,25 @@ func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 				lf.focusIndex++
 			}
 
-			if lf.focusIndex > len(lf.Inputs) {
+			if lf.focusIndex > len(lf.inputs) {
 				lf.focusIndex = 0
 			} else if lf.focusIndex < 0 {
-				lf.focusIndex = len(lf.Inputs)
+				lf.focusIndex = len(lf.inputs)
 			}
 
-			cmds := make([]tea.Cmd, len(lf.Inputs))
-			for i := 0; i <= len(lf.Inputs)-1; i++ {
+			cmds := make([]tea.Cmd, len(lf.inputs))
+			for i := 0; i <= len(lf.inputs)-1; i++ {
 				if i == lf.focusIndex {
 					// Set focused state
-					cmds[i] = lf.Inputs[i].Focus()
-					lf.Inputs[i].PromptStyle = styles.FocusedStyle
-					lf.Inputs[i].TextStyle = styles.FocusedStyle
+					cmds[i] = lf.inputs[i].Focus()
+					lf.inputs[i].PromptStyle = styles.FocusedStyle
+					lf.inputs[i].TextStyle = styles.FocusedStyle
 					continue
 				}
 				// Remove focused state
-				lf.Inputs[i].Blur()
-				lf.Inputs[i].PromptStyle = styles.NoStyle
-				lf.Inputs[i].TextStyle = styles.NoStyle
+				lf.inputs[i].Blur()
+				lf.inputs[i].PromptStyle = styles.NoStyle
+				lf.inputs[i].TextStyle = styles.NoStyle
 			}
 
 			return m, tea.Batch(cmds...)
@@ -152,15 +153,15 @@ func (lf *LoginForm) GetView(m *tui.Model) string {
 	b.WriteString("\n")
 	b.WriteString(styles.GopherQuestion.Render("Log in form:\n"))
 	b.WriteString("\n")
-	for i := range lf.Inputs {
-		b.WriteString(lf.Inputs[i].View())
-		if i < len(lf.Inputs)-1 {
+	for i := range lf.inputs {
+		b.WriteString(lf.inputs[i].View())
+		if i < len(lf.inputs)-1 {
 			b.WriteRune('\n')
 		}
 	}
 
 	button := &styles.BlurredButton
-	if lf.focusIndex == len(lf.Inputs) {
+	if lf.focusIndex == len(lf.inputs) {
 		button = &styles.FocusedButton
 	}
 	fmt.Fprintf(&b, "\n\n%s\n\n", *button)
@@ -188,17 +189,19 @@ func (lf *LoginForm) GetView(m *tui.Model) string {
 	b.WriteString("\n\n")
 	b.WriteString(styles.HelpStyle.Render("<Esc> - back to menu."))
 
-	return b.String()
+	str := b.String()
+	b.Reset()
+	return str
 }
 
 // Help functions.
 func (lf *LoginForm) updateInputs(msg tea.Msg) tea.Cmd {
-	cmds := make([]tea.Cmd, len(lf.Inputs))
+	cmds := make([]tea.Cmd, len(lf.inputs))
 
 	// Only text inputs with Focus() set will respond, so it's safe to simply
 	// update all of them here without any further logic.
-	for i := range lf.Inputs {
-		lf.Inputs[i], cmds[i] = lf.Inputs[i].Update(msg)
+	for i := range lf.inputs {
+		lf.inputs[i], cmds[i] = lf.inputs[i].Update(msg)
 	}
 
 	return tea.Batch(cmds...)
@@ -207,7 +210,7 @@ func (lf *LoginForm) updateInputs(msg tea.Msg) tea.Cmd {
 // Reset all inputs and form errors.
 func (lf *LoginForm) cleanform() {
 	lf.ansver = false
-	lf.IsLogInOk = false
+	lf.isLogInOk = false
 	lf.ansverCode = 0
 	lf.ansverError = nil
 }

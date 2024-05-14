@@ -1,0 +1,5 @@
+package: oapi
+output: internal/client/oapi/gokeepercl.gen.go
+generate:
+  models: true
+  client: true
