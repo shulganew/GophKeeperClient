@@ -25,10 +25,11 @@ const InputsRegister = 3
 type RegisterForm struct {
 	focusIndex  int
 	Inputs      []textinput.Model
-	ansver      bool  // Add info message if servier send answer.
-	IsRegOk     bool  // Successful registration.
-	ansverCode  int   // Servier answer code.
-	ansverError error // Servier answer error.
+	ansver      bool   // Add info message if servier send answer.
+	IsRegOk     bool   // Successful registration.
+	ansverCode  int    // Servier answer code.
+	ansverError error  // Servier answer error.
+	secret      string // OTP secret for new user.
 }
 
 func NewRegisterForm() *RegisterForm {
@@ -102,14 +103,15 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 			// If user registration done, enter for continue...
 			if rf.IsRegOk {
 				rf.cleanform()
-				m.ChangeState(tui.RegisterForm, tui.MainMenu, false, nil)
+				m.ChangeState(tui.RegisterForm, tui.LoginForm, false, nil)
 				return m, nil
 			}
 			// Submit button pressed!
 			if s == "enter" && rf.focusIndex == len(rf.Inputs) {
 
 				zap.S().Infof("Text inputs %s  %s", rf.Inputs[0].Value(), rf.Inputs[1].Value(), rf.Inputs[2].Value())
-				user, jwt, status, err := client.UserReg(m.Client, context.Background(), m.Conf, rf.Inputs[0].Value(), rf.Inputs[2].Value(), rf.Inputs[1].Value())
+				user, jwt, status, secret, err := client.UserReg(m.Client, context.Background(), m.Conf, rf.Inputs[0].Value(), rf.Inputs[2].Value(), rf.Inputs[1].Value())
+				rf.secret = secret
 				rf.ansver = true
 				rf.ansverCode = status
 				rf.ansverError = err
@@ -189,6 +191,8 @@ func (rf *RegisterForm) GetView(m *tui.Model) string {
 	if rf.ansver {
 		if rf.ansverCode == http.StatusCreated {
 			b.WriteString(styles.OkStyle1.Render("User registerd successful: ", m.User.Login))
+			b.WriteString("\n\n")
+			b.WriteString(styles.OkStyle1.Render("Add secret to GAuthenticator: ", rf.secret))
 			b.WriteString("\n\n")
 			b.WriteString(styles.GopherQuestion.Render("Press <Enter> to continue... "))
 			b.WriteString("\n\n")

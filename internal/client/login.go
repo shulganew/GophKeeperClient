@@ -8,9 +8,9 @@ import (
 	"go.uber.org/zap"
 )
 
-func UserLogin(c *oapi.Client, login, pw string) (user *oapi.NewUser, jwt string, status int, err error) {
+func UserLogin(c *oapi.Client, login, pw, otp string) (user *oapi.NewUser, jwt string, status int, err error) {
 	// Create OAPI user.
-	user = &oapi.NewUser{Login: login, Password: pw}
+	user = &oapi.NewUser{Login: login, Password: pw, Otp: otp}
 	resp, err := c.Login(context.Background(), *user)
 	if err != nil {
 		return nil, "", 0, err

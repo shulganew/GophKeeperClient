@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const inputsLogin = 2
+const inputsLogin = 3
 
 // Implemet State.
 var _ tui.State = (*LoginForm)(nil)
@@ -52,6 +52,10 @@ func NewLoginForm() *LoginForm {
 			t.EchoMode = textinput.EchoPassword
 			t.EchoCharacter = '•'
 			t.SetValue("123")
+		case 2:
+			t.Placeholder = "Auth OTP"
+			t.PromptStyle = styles.FocusedStyle
+			t.TextStyle = styles.FocusedStyle
 		}
 		lf.inputs[i] = t
 	}
@@ -90,8 +94,7 @@ func (lf *LoginForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			// Submit button pressed!
 			if s == "enter" && lf.focusIndex == len(lf.inputs) {
-				zap.S().Infof("Text inputs %s  %s", lf.inputs[0].Value(), lf.inputs[1].Value())
-				user, jwt, status, err := client.UserLogin(m.Client, lf.inputs[0].Value(), lf.inputs[1].Value())
+				user, jwt, status, err := client.UserLogin(m.Client, lf.inputs[0].Value(), lf.inputs[1].Value(), lf.inputs[2].Value())
 				lf.ansver = true
 				lf.ansverCode = status
 				lf.ansverError = err
@@ -213,4 +216,5 @@ func (lf *LoginForm) cleanform() {
 	lf.isLogInOk = false
 	lf.ansverCode = 0
 	lf.ansverError = nil
+	lf.inputs[2].SetValue("")
 }

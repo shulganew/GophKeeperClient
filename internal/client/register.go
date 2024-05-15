@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"strings"
 
@@ -12,12 +13,12 @@ import (
 
 const authPrefix = "Bearer "
 
-func UserReg(c *oapi.Client, ctx context.Context, conf config.Config, login, pw, email string) (user *oapi.NewUser, jwt string, status int, err error) {
+func UserReg(c *oapi.Client, ctx context.Context, conf config.Config, login, pw, email string) (user *oapi.NewUser, jwt string, status int, secret string, err error) {
 	// Create OAPI user.
 	user = &oapi.NewUser{Login: login, Password: pw, Email: email}
 	resp, err := c.CreateUser(ctx, *user)
 	if err != nil {
-		return nil, "", http.StatusInternalServerError, err
+		return nil, "", http.StatusInternalServerError, "", err
 	}
 
 	// Print to log file for debug level.
@@ -35,5 +36,11 @@ func UserReg(c *oapi.Client, ctx context.Context, conf config.Config, login, pw,
 	}
 	zap.S().Infoln(jwt, user.Login, user.Password)
 
-	return user, jwt, resp.StatusCode, nil
+	// Read otp secret from body
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", http.StatusInternalServerError, "", err
+	}
+
+	return user, jwt, resp.StatusCode, string(data), nil
 }

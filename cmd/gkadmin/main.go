@@ -23,6 +23,7 @@ func main() {
 	sertPath := flag.String("s", "cert/server.crt", "Service GKeeper address")
 	login := flag.String("l", "admin", "Admin login")
 	pw := flag.String("p", "123", "Admin pw")
+	otp := flag.String("o", "", "OTP 6 digits from authentificator")
 	master := flag.String("m", "MasterKey:NewMasterKey", "Change master passwor old:new format. Don't use septarator in pass simbols! (admin mode)")
 	flag.Parse()
 
@@ -33,7 +34,7 @@ func main() {
 	}
 
 	// Login admin
-	_, jwt, status, err := client.UserLogin(c, *login, *pw)
+	_, jwt, status, err := client.UserLogin(c, *login, *pw, *otp)
 	if status != http.StatusOK || err != nil {
 		log.Println("Can't login.", err, status)
 	}

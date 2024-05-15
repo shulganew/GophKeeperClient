@@ -148,6 +148,9 @@ type NewUser struct {
 	// Login User login from registration
 	Login string `json:"login"`
 
+	// Otp User's one time pass
+	Otp string `json:"otp"`
+
 	// Password User pass from registartion
 	Password string `json:"password"`
 }

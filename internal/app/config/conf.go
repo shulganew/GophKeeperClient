@@ -3,7 +3,6 @@ package config
 import (
 	"flag"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/shulganew/GophKeeperClient/internal/app/validators"
@@ -35,18 +34,6 @@ func InitConfig() *Config {
 	// Server address
 	u := url.URL{Scheme: Shema, Host: startaddr + ":" + startport}
 	config.Address = u.String()
-
-	// read OS ENVs
-	addr, exist := os.LookupEnv(("RUN_ADDRESS"))
-
-	// if env var does not exist  - set def value
-	if exist {
-		config.Address = addr
-		zap.S().Infoln("Set result address from evn RUN_ADDRESS: ", config.Address)
-	} else {
-		zap.S().Infoln("Env var RUN_ADDRESS not found, use default", config.Address)
-	}
-
 	config.FileSavingPath = *filePath
 	config.SertPath = *sertPath
 	zap.S().Infoln("Configuration complite")
