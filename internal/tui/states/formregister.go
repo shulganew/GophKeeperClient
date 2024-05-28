@@ -49,17 +49,14 @@ func NewRegisterForm() *RegisterForm {
 			t.Focus()
 			t.PromptStyle = styles.FocusedStyle
 			t.TextStyle = styles.FocusedStyle
-			t.SetValue("igor")
 		case 1:
 			t.Placeholder = "e-mail"
 			t.PromptStyle = styles.NoStyle
 			t.TextStyle = styles.NoStyle
-			t.SetValue("scaevol@yandex.ru")
 		case 2:
 			t.Placeholder = "Password"
 			t.EchoMode = textinput.EchoPassword
 			t.EchoCharacter = '•'
-			t.SetValue("123")
 		}
 
 		rf.Inputs[i] = t
@@ -81,7 +78,7 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 		case "ctrl+c", "esc":
 			rf.cleanform()
 			if m.IsUserLogedIn {
-				m.ChangeState(tui.RegisterForm, tui.MainMenu, false, nil)
+				m.ChangeState(tui.RegisterForm, tui.LoginForm, false, nil)
 				return m, nil
 			}
 			m.ChangeState(tui.RegisterForm, tui.NotLoginMenu, false, nil)
@@ -133,7 +130,7 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 				return m, nil
 			}
 
-			// Cycle indexes
+			// Cycle indexes.
 			if s == "up" || s == "shift+tab" {
 				rf.focusIndex--
 			} else {
@@ -149,13 +146,13 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 			cmds := make([]tea.Cmd, len(rf.Inputs))
 			for i := 0; i <= len(rf.Inputs)-1; i++ {
 				if i == rf.focusIndex {
-					// Set focused state
+					// Set focused state.
 					cmds[i] = rf.Inputs[i].Focus()
 					rf.Inputs[i].PromptStyle = styles.FocusedStyle
 					rf.Inputs[i].TextStyle = styles.FocusedStyle
 					continue
 				}
-				// Remove focused state
+				// Remove focused state.
 				rf.Inputs[i].Blur()
 				rf.Inputs[i].PromptStyle = styles.NoStyle
 				rf.Inputs[i].TextStyle = styles.NoStyle
@@ -164,13 +161,13 @@ func (rf *RegisterForm) GetUpdate(m *tui.Model, msg tea.Msg) (tea.Model, tea.Cmd
 		}
 	}
 
-	// Handle character input and blinking
+	// Handle character input and blinking.
 	cmd := rf.updateInputs(msg)
 
 	return m, cmd
 }
 
-// The main view, which just calls the appropriate sub-view
+// The main view, which just calls the appropriate sub-view.
 func (rf *RegisterForm) GetView(m *tui.Model) string {
 	var b strings.Builder
 	b.WriteString("\n")

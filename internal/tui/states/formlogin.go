@@ -46,12 +46,10 @@ func NewLoginForm() *LoginForm {
 			t.Focus()
 			t.PromptStyle = styles.FocusedStyle
 			t.TextStyle = styles.FocusedStyle
-			t.SetValue("igor")
 		case 1:
 			t.Placeholder = "Password"
 			t.EchoMode = textinput.EchoPassword
 			t.EchoCharacter = '•'
-			t.SetValue("123")
 		case 2:
 			t.Placeholder = "Auth OTP"
 			t.PromptStyle = styles.FocusedStyle
